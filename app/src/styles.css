@@ -6,7 +6,7 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
   font: 700 14px/1.35 "Chalkboard SE", "Comic Sans MS", "Bradley Hand", cursive;
   transform-origin: 50% 100%; animation: pop 0.2s ease-out;
 }
-#bubble-text { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#bubble-text { display: block; }
 /* queue de la bulle : un triangle noir (contour) et un blanc (remplissage) */
 #bubble::before, #bubble::after {
   content: ""; position: absolute; left: 50%; border: solid transparent; transform: translateX(-50%);
