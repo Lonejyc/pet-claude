@@ -15,7 +15,7 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
 #bubble::after { bottom: -11px; border-width: 11px 8px 0; border-top-color: #fff; }
 #bubble[hidden] { display: none; }
 #pet {
-  --rx: 0; --ry: 0; --lx: 0; --ly: 0; /* regard et orientation, pilotés par la position du curseur */
+  --rx: 0; --ry: 0; --lx: 0; --ly: 0; --k: 1; /* regard et orientation, pilotés par la position du curseur */
   position: relative; width: 150px; height: 112px; perspective: 600px; user-select: none; cursor: grab; animation: bounce 1.6s ease-in-out infinite;
 }
 #pet * { pointer-events: none; } /* tous les clics tombent sur #pet */
@@ -55,9 +55,11 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
 #pet.held .leg { transform-origin: 50% 0; animation: dangle 0.15s ease-in-out infinite alternate; }
 #pet.held .leg:nth-child(even) { animation-direction: alternate-reverse; }
 #pet.drop .squash { animation: drop 0.35s ease-in; }
+#pet.bounce .squash { animation: bounce 0.25s ease-out; }
 @keyframes panic { from { transform: translate(-2px, -14px) rotate(-5deg); } to { transform: translate(2px, -14px) rotate(5deg); } }
 @keyframes dangle { from { transform: rotate(-18deg); } to { transform: rotate(18deg); } }
-@keyframes drop { 0% { transform: translateY(-14px); } 45% { transform: scale(1.08, 0.88); } 70% { transform: scale(0.98, 1.03); } 100% { transform: none; } }
+@keyframes drop { 0% { transform: translateY(-14px); } 45% { transform: scale(calc(1 + 0.08 * var(--k)), calc(1 - 0.12 * var(--k))); } 70% { transform: scale(calc(1 - 0.02 * var(--k)), calc(1 + 0.03 * var(--k))); } 100% { transform: none; } }
+@keyframes bounce { 0%, 100% { transform: none; } 30% { transform: scale(calc(1 + 0.15 * var(--k)), calc(1 - 0.22 * var(--k))); } }
 
 /* Accessoires par outil : Read = lunettes + regard qui balaie, Bash = clavier + bras qui tapent, Edit = marteau, Web = jumelles */
 .glasses, .binoculars, .keyboard, .hammer, .anvil, .flash { display: none; }
@@ -112,3 +114,15 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
   40% { transform: translate(calc(var(--dx) * 0.8), var(--dy)) rotate(calc(var(--rot) * 0.5)); }
   to { transform: translate(var(--dx), calc(var(--dy) + 150px)) rotate(var(--rot)); opacity: 0; }
 }
+
+/* Clignement : les yeux ouverts se ferment une fraction de seconde (et restent fermés pendant le sommeil). */
+#pet.blink .eyes-open rect, #pet[data-state="sleeping"] .eyes-open rect { transform-box: fill-box; transform-origin: center; transform: scaleY(0.12); }
+#pet[data-state="sleeping"] { transform-origin: 50% 100%; animation: breathe 3s ease-in-out infinite; }
+#pet[data-state="sleeping"] .rig { transform: rotateX(8deg); } /* tête penchée, il ne suit plus la souris */
+@keyframes breathe { 50% { transform: scaleY(1.03); } }
+.zzz { display: none; position: absolute; left: 105px; top: 0; }
+#pet[data-state="sleeping"] .zzz { display: block; }
+.zzz span { position: absolute; font: 700 20px "Chalkboard SE", "Comic Sans MS", cursive; color: #5b6b8a; opacity: 0; animation: zzz 3s ease-out infinite; }
+.zzz span:nth-child(2) { animation-delay: 1s; }
+.zzz span:nth-child(3) { animation-delay: 2s; }
+@keyframes zzz { 0% { opacity: 0; transform: translate(0, 10px) scale(0.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(18px, -36px) scale(1.3); } }
