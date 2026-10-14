@@ -1,5 +1,5 @@
 #!/bin/sh
-# Construit l'installateur macOS : installer/pet-claude.pkg (écrans d'accueil, case à cocher par option, lancement final).
+# Construit l'installateur macOS : installer/pet-claude-<version>.pkg (écrans d'accueil, case à cocher par option, lancement final).
 set -e
 . "$HOME/.cargo/env"
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -17,5 +17,5 @@ for c in hooks login style launch; do
   pkgbuild --nopayload --identifier "fr.perso.petclaude.$c" --version "$VERSION" --scripts "$HERE/scripts/$c" "$OUT/$c.pkg"
 done
 sed "s/__VERSION__/$VERSION/g; s/__ARCH__/$ARCH/g" "$HERE/distribution.xml" > "$OUT/distribution.xml"
-productbuild --distribution "$OUT/distribution.xml" --resources "$HERE/resources" --package-path "$OUT" "$HERE/pet-claude.pkg"
-echo "Installateur : $HERE/pet-claude.pkg"
+productbuild --distribution "$OUT/distribution.xml" --resources "$HERE/resources" --package-path "$OUT" "$HERE/pet-claude-$VERSION.pkg"
+echo "Installateur : $HERE/pet-claude-$VERSION.pkg"
