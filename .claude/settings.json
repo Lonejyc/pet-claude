@@ -1,0 +1,7 @@
+{
+  "hooks": {
+    "PreToolUse": [{ "hooks": [{ "type": "command", "command": "curl -s -m 1 --data-binary @- localhost:4242/PreToolUse || true" }] }],
+    "PostToolUse": [{ "hooks": [{ "type": "command", "command": "curl -s -m 1 --data-binary @- localhost:4242/PostToolUse || true" }] }],
+    "Stop": [{ "hooks": [{ "type": "command", "command": "curl -s -m 1 --data-binary @- localhost:4242/Stop || true" }] }]
+  }
+}
