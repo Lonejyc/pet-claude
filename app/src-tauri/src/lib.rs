@@ -65,9 +65,9 @@ fn track_cursor(window: tauri::WebviewWindow) {
             else {
                 continue;
             };
-            // centre du pet : milieu de la fenêtre, 60 px (logiques) au-dessus du bas
+            // centre du pet : milieu de la fenêtre, 92 px (logiques) au-dessus du bas (36 de marge + moitié du pet)
             let dx = (c.x - (p.x as f64 + s.width as f64 / 2.0)) / k;
-            let dy = (c.y - (p.y as f64 + s.height as f64 - 60.0 * k)) / k;
+            let dy = (c.y - (p.y as f64 + s.height as f64 - 92.0 * k)) / k;
             if (dx, dy) != last {
                 last = (dx, dy);
                 let _ = window.emit("cursor", (dx, dy));

@@ -9,6 +9,12 @@ type Hook = { event: string; tool?: string; message?: string };
 const pet = document.querySelector<HTMLElement>("#pet")!;
 const bubble = document.querySelector<HTMLElement>("#bubble")!;
 buildPet(document.querySelector<HTMLElement>("#rig")!);
+// Un "tok" à chaque coup de marteau (impacts à 5 %, 21 % et 38 % du cycle de 2 s défini dans styles.css).
+const hammer = document.querySelector<HTMLElement>(".hammer")!;
+const tokOnImpacts = () => [100, 420, 760].forEach((ms) => setTimeout(sound.tok, ms));
+hammer.addEventListener("animationstart", tokOnImpacts);
+hammer.addEventListener("animationiteration", tokOnImpacts);
+
 const typed = document.querySelector<HTMLElement>("#typed")!;
 let stateTimer: number;
 let bubbleTimer: number;
@@ -19,8 +25,39 @@ const COOLDOWN_MS = 20_000;
 let lastSpokeAt = 0;
 let failedThisTurn = false;
 
+// Outil en cours -> accessoire du pet (cf. [data-tool] dans styles.css)
+const TOOL_KINDS: Record<string, string> = {
+  Read: "read", Grep: "read", Glob: "read",
+  Bash: "bash",
+  Edit: "edit", Write: "edit", MultiEdit: "edit", NotebookEdit: "edit",
+  WebSearch: "web", WebFetch: "web",
+};
+
+// Confettis seulement après un tour chargé (>= 3 outils) et sans échec : sinon ils perdent leur sens.
+const CONFETTI_MIN_TOOLS = 3;
+let toolsThisTurn = 0;
+
+function confetti() {
+  for (let i = 0; i < 24; i++) {
+    const c = document.createElement("div");
+    c.className = "confetti";
+    c.style.background = `hsl(${Math.random() * 360} 90% 60%)`;
+    c.style.setProperty("--dx", `${(Math.random() - 0.5) * 220}px`);
+    c.style.setProperty("--dy", `${-60 - Math.random() * 90}px`);
+    c.style.setProperty("--rot", `${Math.random() * 720}deg`);
+    c.addEventListener("animationend", () => c.remove());
+    pet.append(c);
+  }
+  sound.tada();
+}
+
+// Bruit de frappe : un clic toutes les 140 ms, un par coup de bras (les bras alternent, cf. @keyframes tap).
+let typingTimer: number;
+
 function setState(state: string, thenAfterMs?: number, then = "idle") {
   pet.dataset.state = state;
+  delete pet.dataset.tool;
+  clearInterval(typingTimer);
   clearTimeout(stateTimer);
   if (thenAfterMs) stateTimer = setTimeout(() => setState(then), thenAfterMs);
 }
@@ -53,7 +90,16 @@ function say(text: string) {
 }
 
 listen<Hook>("hook", ({ payload }) => {
-  if (payload.event === "PreToolUse") setState("working");
+  if (payload.event === "PreToolUse") {
+    setState("working");
+    toolsThisTurn++;
+    const kind = payload.tool && TOOL_KINDS[payload.tool];
+    if (kind) pet.dataset.tool = kind;
+    if (kind === "bash") {
+      sound.key();
+      typingTimer = setInterval(sound.key, 140);
+    }
+  }
   // Claude continue en général après un échec : retour au travail, c'est Stop qui calmera le pet.
   if (payload.event === "PostToolUseFailure") {
     failedThisTurn = true;
@@ -63,7 +109,9 @@ listen<Hook>("hook", ({ payload }) => {
   if (payload.event === "Stop") {
     if (payload.message && (failedThisTurn || Date.now() - lastSpokeAt > COOLDOWN_MS)) say(payload.message);
     else setState("idle");
+    if (toolsThisTurn >= CONFETTI_MIN_TOOLS && !failedThisTurn) confetti();
     failedThisTurn = false;
+    toolsThisTurn = 0;
   }
 });
 

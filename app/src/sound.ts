@@ -33,5 +33,11 @@ export const sound = {
     tone(262, 220, 200, "triangle", 0.07, 140);
   },
   yelp: () => tone(700, 1100, 110, "square", 0.05),
+  tada: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 120, "triangle", 0.06, i * 90)),
+  tok: () => {
+    tone(900, 300, 40, "square", 0.08);
+    tone(140, 70, 90, "sine", 0.1);
+  },
+  key: () => tone(1500 + Math.random() * 600, 700, 18, "square", 0.04),
   thump: () => tone(130, 60, 110, "sine", 0.12),
 };
