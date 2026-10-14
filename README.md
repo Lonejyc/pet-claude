@@ -29,6 +29,7 @@ deux bras carrés, huit pieds courts, des yeux rectangulaires. Il doit être att
 - Orange `#e8793c` en face avant, plus clair sur le dessus (`#f2985f`), plus sombre sur les côtés (`#c9622a`, `#d46d31`) et au dos ; yeux `#1a1a1a`.
 - Vue de trois quarts légèrement de dessus au repos : le volume se lit même immobile. Il se tourne vers le curseur et le suit des yeux.
 - Icône : le vrai pet 3D sur un carré arrondi violet (`#6a5fd0` → `#221d52`), pour faire ressortir l'orange.
+- Barre de menus : silhouette **2D noir et blanc**, de face, yeux découpés (image « template » macOS : le système la teinte en blanc en mode sombre).
 
 **Expression : peu d'éléments, très lisibles**
 - Yeux rectangulaires au repos, qui clignent. Yeux plissés `>  <` réservés à l'inquiétude et à la panique, jamais à la réflexion.
@@ -63,8 +64,8 @@ Prérequis : macOS sur Apple Silicon, [Claude Code](https://claude.com/claude-co
 | Clic | il s'écrase comme une balle |
 | Glisser / lâcher en mouvement | le déplacer / le lancer |
 | Double-clic | poser une question (Entrée envoie, Échap ferme, Tab change de session) |
-| `/settings` dans le champ | fenêtre de réglages (l'icône Dock n'apparaît que pendant les réglages) |
-| `/quit` dans le champ | fermer le pet |
+| Icône du pet dans la barre de menus | **Réglages…** et **Quitter** |
+| `/settings` ou `/quit` dans le champ | idem, au clavier (l'icône Dock n'apparaît que pendant les réglages) |
 
 ## Ce qui est modifié sur ta machine
 - `/Applications/pet-claude.app`

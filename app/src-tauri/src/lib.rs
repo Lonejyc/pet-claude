@@ -20,6 +20,28 @@ fn quit(app: tauri::AppHandle) {
     app.exit(0);
 }
 
+/// Icône toujours présente dans la barre de menus : accès aux réglages et à Quitter (le pet n'a ni icône Dock ni menu).
+fn menu_bar_icon(app: &tauri::App) -> tauri::Result<()> {
+    use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+    use tauri::tray::TrayIconBuilder;
+
+    let settings = MenuItem::with_id(app, "settings", "Réglages…", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quitter pet-claude", true, None::<&str>)?;
+    let menu = Menu::with_items(app, &[&settings, &PredefinedMenuItem::separator(app)?, &quit])?;
+    TrayIconBuilder::with_id("pet-claude")
+        .icon(tauri::image::Image::from_bytes(include_bytes!("../icons/tray.png"))?)
+        .icon_as_template(true) // silhouette noire que macOS teinte (blanche en mode sombre)
+        .tooltip("pet-claude")
+        .menu(&menu)
+        .on_menu_event(|app, event| match event.id.as_ref() {
+            "settings" => open_settings(app),
+            "quit" => app.exit(0),
+            _ => {}
+        })
+        .build(app)?;
+    Ok(())
+}
+
 pub fn open_settings(app: &tauri::AppHandle) {
     native::set_dock_visible(true);
     if let Some(w) = app.get_webview_window("settings") {
@@ -100,6 +122,7 @@ pub fn run() {
             );
             allow_offscreen(&app.get_webview_window("main").unwrap());
             key_window_only_when_chatting(&app.get_webview_window("main").unwrap());
+            menu_bar_icon(app)?;
             listen_to_hooks(app.handle().clone());
             track_cursor(app.get_webview_window("main").unwrap());
             Ok(())
