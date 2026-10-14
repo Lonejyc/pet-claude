@@ -1,12 +1,14 @@
 import { listen } from "@tauri-apps/api/event";
 import { LogicalPosition } from "@tauri-apps/api/dpi";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { buildPet } from "./pet3d";
 import { sound } from "./sound";
 
 type Hook = { event: string; tool?: string; message?: string };
 
 const pet = document.querySelector<HTMLElement>("#pet")!;
 const bubble = document.querySelector<HTMLElement>("#bubble")!;
+buildPet(document.querySelector<HTMLElement>("#rig")!);
 const typed = document.querySelector<HTMLElement>("#typed")!;
 let stateTimer: number;
 let bubbleTimer: number;
@@ -113,4 +115,13 @@ pet.addEventListener("pointercancel", release);
 pet.addEventListener("animationend", (e) => {
   if (e.animationName === "boing") pet.classList.remove("boing");
   if (e.animationName === "drop") pet.classList.remove("drop");
+});
+
+// Le pet se tourne vers le curseur et le suit des yeux (position relative au pet, envoyée par Rust).
+const clamp = (v: number) => Math.max(-1, Math.min(1, v / 250));
+listen<[number, number]>("cursor", ({ payload: [dx, dy] }) => {
+  pet.style.setProperty("--ry", String(clamp(dx) * 22));
+  pet.style.setProperty("--rx", String(-clamp(dy) * 12));
+  pet.style.setProperty("--lx", String(clamp(dx) * 3));
+  pet.style.setProperty("--ly", String(clamp(dy) * 2));
 });

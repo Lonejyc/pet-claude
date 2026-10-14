@@ -26,6 +26,7 @@ pub fn run() {
                 CollectionBehavior::new().full_screen_auxiliary().can_join_all_spaces().into(),
             );
             listen_to_hooks(app.handle().clone());
+            track_cursor(app.get_webview_window("main").unwrap());
             Ok(())
         })
         .run(tauri::generate_context!())
@@ -49,6 +50,28 @@ fn listen_to_hooks(app: tauri::AppHandle) {
                 serde_json::json!({ "event": event, "tool": v["tool_name"], "message": v["last_assistant_message"] }),
             );
             let _ = req.respond(tiny_http::Response::empty(200));
+        }
+    });
+}
+
+/// Envoie au front la position du curseur par rapport au pet (px logiques), pour qu'il se tourne vers lui.
+fn track_cursor(window: tauri::WebviewWindow) {
+    std::thread::spawn(move || {
+        let mut last = (f64::NAN, f64::NAN);
+        loop {
+            std::thread::sleep(std::time::Duration::from_millis(33));
+            let (Ok(c), Ok(p), Ok(s), Ok(k)) =
+                (window.cursor_position(), window.outer_position(), window.outer_size(), window.scale_factor())
+            else {
+                continue;
+            };
+            // centre du pet : milieu de la fenêtre, 60 px (logiques) au-dessus du bas
+            let dx = (c.x - (p.x as f64 + s.width as f64 / 2.0)) / k;
+            let dy = (c.y - (p.y as f64 + s.height as f64 - 60.0 * k)) / k;
+            if (dx, dy) != last {
+                last = (dx, dy);
+                let _ = window.emit("cursor", (dx, dy));
+            }
         }
     });
 }
