@@ -87,7 +87,6 @@ pub fn run() {
     }
     tauri::Builder::default()
         .plugin(tauri_nspanel::init())
-        .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![native::screens, native::window_origin, native::set_window_origin, native::mouse, native::set_chat_open, chat::ask, quit, open_settings_cmd, setup_status, hooks_enable, style_enable, login_enable, get_settings, save_settings])
         .setup(|app| {
             // Accessory : pas d'icône dans le Dock, requis pour s'afficher au-dessus du plein écran.

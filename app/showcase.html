@@ -1,0 +1,46 @@
+<!doctype html>
+<!-- Planche des états du pet pour le README. Générée par ../scripts/make-readme-images.sh (serveur de dev lancé). -->
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <style>
+      html, body { width: 1500px; height: 310px; margin: 0; display: block; overflow: hidden; background: transparent; }
+      .plate { position: absolute; inset: 0; border-radius: 36px; background: radial-gradient(ellipse at 20% 0%, #5a50c0 0%, #342d7c 50%, #1f1b4a 100%); }
+      .row { position: absolute; inset: 0; display: flex; justify-content: space-around; align-items: flex-end; padding: 0 20px 84px; }
+      .slot { position: relative; width: 200px; height: 112px; display: flex; justify-content: center; }
+      .slot > #pet { transform: scale(1.3); transform-origin: 50% 100%; animation: none !important; }
+      .slot > #pet * { animation-play-state: paused !important; }
+      .slot > #pet .rig { transition: none; }
+      .slot span { position: absolute; left: 0; right: 0; bottom: -52px; text-align: center; color: #f3ecff; font: 700 21px/1.2 "Chalkboard SE", "Comic Sans MS", cursive; }
+      .slot .shadow { position: absolute; left: 14px; right: 14px; bottom: -14px; height: 26px; border-radius: 50%; background: radial-gradient(closest-side, rgba(8, 4, 30, 0.65), transparent); filter: blur(5px); }
+    </style>
+  </head>
+  <body>
+    <div class="plate"></div>
+    <div class="row" id="row"></div>
+    <script type="module">
+      import { buildPet } from "/src/pet3d.ts";
+      const states = [
+        ["au repos", {}],
+        ["lit", { tool: "read" }],
+        ["tape", { tool: "bash" }],
+        ["modifie", { tool: "edit" }],
+        ["cherche", { tool: "web" }],
+        ["s'inquiète", { state: "worried" }],
+        ["dort", { state: "sleeping" }],
+      ];
+      const row = document.getElementById("row");
+      for (const [label, { tool, state }] of states) {
+        const slot = document.createElement("div");
+        slot.className = "slot";
+        // mêmes structure et attributs que la vraie page du pet : les règles CSS visent #pet[data-state] / #pet[data-tool]
+        slot.innerHTML = `<div class="shadow"></div><div id="pet" data-state="${state ?? "idle"}" ${tool ? `data-tool="${tool}"` : ""}
+          style="--rx:-4; --ry:22; --lx:0.6; --ly:0.3"><div class="zzz"><span>z</span><span>z</span><span>Z</span></div>
+          <div class="squash"><div class="rig"></div></div></div><span>${label}</span>`;
+        row.append(slot);
+        buildPet(slot.querySelector(".rig"));
+      }
+    </script>
+  </body>
+</html>
