@@ -33,6 +33,12 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
 #pet[data-state="talking"] .mouth { display: inline; animation: mouth 0.25s steps(1) infinite; }
 @keyframes mouth { 50% { transform: scaleY(0.3); transform-origin: 60px 53px; } }
 
+/* Inquiet : un outil a échoué. Il frissonne, yeux plus petits, bouche toute plate. */
+#pet[data-state="worried"] { animation: shiver 0.08s linear infinite alternate; }
+#pet[data-state="worried"] .eyes-open rect { transform-box: fill-box; transform-origin: center; transform: scale(0.8); }
+#pet[data-state="worried"] .mouth { display: inline; transform-box: fill-box; transform-origin: center; transform: scaleY(0.4); }
+@keyframes shiver { from { transform: translateX(-1.5px); } to { transform: translateX(1.5px); } }
+
 /* Pris en main : il ne touche plus le sol, il panique. Relâché : il retombe. */
 #pet.held { animation: panic 0.12s ease-in-out infinite alternate; }
 #pet.held .eyes-open rect { transform-box: fill-box; transform-origin: center; transform: scale(1.3); }

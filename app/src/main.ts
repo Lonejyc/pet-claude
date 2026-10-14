@@ -10,10 +10,10 @@ let stateTimer: number;
 let bubbleTimer: number;
 let typeTimer: number;
 
-function setState(state: string, backToIdleAfterMs?: number) {
+function setState(state: string, thenAfterMs?: number, then = "idle") {
   pet.dataset.state = state;
   clearTimeout(stateTimer);
-  if (backToIdleAfterMs) stateTimer = setTimeout(() => setState("idle"), backToIdleAfterMs);
+  if (thenAfterMs) stateTimer = setTimeout(() => setState(then), thenAfterMs);
 }
 
 // Le pet parle sur la 1re ligne de la réponse (cf. output style) : première phrase, sans markdown ; le CSS coupe à une ligne.
@@ -40,6 +40,8 @@ function say(text: string) {
 
 listen<Hook>("hook", ({ payload }) => {
   if (payload.event === "PreToolUse") setState("working");
+  // Claude continue en général après un échec : retour au travail, c'est Stop qui calmera le pet.
+  if (payload.event === "PostToolUseFailure") setState("worried", 2500, "working");
   if (payload.event === "Stop") {
     if (payload.message) say(payload.message);
     else setState("idle");

@@ -29,6 +29,16 @@
           }
         ]
       }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "curl -s -m 1 --data-binary @- localhost:4242/PostToolUseFailure || true"
+          }
+        ]
+      }
     ]
   },
   "outputStyle": "Pet"
