@@ -64,18 +64,30 @@ Prérequis : macOS sur Apple Silicon, [Claude Code](https://claude.com/claude-co
 | Clic | il s'écrase comme une balle |
 | Glisser / lâcher en mouvement | le déplacer / le lancer |
 | Double-clic | poser une question (Entrée envoie, Échap ferme, Tab change de session) |
-| Icône du pet dans la barre de menus | **Réglages…** et **Quitter** |
+| Icône du pet dans la barre de menus | **Masquer le pet**, **Réglages…** et **Quitter** |
 | `/settings` ou `/quit` dans le champ | idem, au clavier (l'icône Dock n'apparaît que pendant les réglages) |
 
 ## Ce qui est modifié sur ta machine
 - `/Applications/pet-claude.app`
 - `~/.claude/settings.json` : cinq hooks (`curl` vers `localhost:4242`) **ajoutés à côté des tiens**, sauvegarde dans
   `settings.json.bak-pet-claude`. Si tu coches la personnalité : `outputStyle: "Pet"` et `~/.claude/output-styles/pet.md`.
-- `~/Library/LaunchAgents/fr.perso.petclaude.plist` (lancement au démarrage, optionnel)
-- `~/Library/Application Support/fr.perso.petclaude/settings.json` (réglages du pet)
+- `~/Library/LaunchAgents/io.github.lonejyc.pet-claude.plist` (lancement au démarrage, optionnel)
+- `~/Library/Application Support/io.github.lonejyc.pet-claude/` : tes réglages (`settings.json`) et le secret du pet (`token`, lisible par toi seul)
 
-Aucune donnée ne quitte ta machine : le pet n'écoute que `127.0.0.1:4242`. Chaque question du mini-chat est un appel
-normal à Claude (donc comptée comme tel).
+Aucune donnée ne quitte ta machine. Chaque question du mini-chat est un appel normal à Claude (donc comptée comme tel).
+
+## Sécurité et vie privée
+- Le pet n'écoute que sur `127.0.0.1:4242` (jamais sur le réseau).
+- Il **n'accepte que les requêtes qui portent son secret** (en-tête `X-Pet-Token`, généré au premier lancement, stocké en lecture
+  seule pour toi). Il vérifie aussi l'en-tête `Host` (contre le rebinding DNS) et refuse les corps de plus de 4 Mo.
+  Résultat : une page web ouverte dans ton navigateur ne peut pas faire parler le pet.
+- Ce secret n'empêche pas un programme qui tourne déjà sous ton compte de lire `~/.claude/settings.json` et de le copier : c'est
+  le même niveau de confiance que tes autres réglages.
+- Le mini-chat ne dispose que de `Read`, `Grep` et `Glob` : il peut lire ton code, mais ne modifie rien et ne lance aucune commande.
+- Les modifications de `~/.claude/settings.json` sont atomiques (fichier temporaire puis renommage), conservent les permissions,
+  sont précédées d'une sauvegarde, et sont **refusées sans rien écrire** si ce fichier n'est pas du JSON valide.
+- Mise à jour depuis les betas 1 et 2 : l'app migre toute seule l'ancien identifiant (`fr.perso.petclaude`) et met à jour
+  les hooks pour qu'ils portent le secret.
 
 ## Désinstaller
 `./scripts/uninstall.sh` retire les hooks, la personnalité, le lancement au démarrage et l'app.
@@ -88,9 +100,18 @@ normal à Claude (donc comptée comme tel).
 - Un seul pet à la fois : si deux instances tournent (par ex. version de développement + installée), seule la première reçoit les hooks.
 - Les accessoires du pet (clavier, marteau, enclume, jumelles) sont positionnés « à l'œil » et peuvent légèrement traverser le corps.
 
+## Licence et mentions légales
+- Code publié sous **licence MIT** (voir [`LICENSE`](LICENSE)). Les licences des dépendances sont listées dans
+  [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md) (aucune licence copyleft forte ; 5 crates sous MPL-2.0, utilisées sans modification).
+- **pet-claude est un projet indépendant, non affilié à Anthropic, ni approuvé ou sponsorisé par elle.** « Claude » et
+  « Claude Code » sont des marques d'Anthropic ; elles ne servent ici qu'à désigner le logiciel avec lequel le pet fonctionne.
+- Le logiciel est fourni « tel quel », sans garantie (voir la licence). Il modifie `~/.claude/settings.json` : une sauvegarde est faite, mais
+  lis la section « Ce qui est modifié sur ta machine » avant d'installer.
+
 ## Développer
 ```sh
 cd app && npm install && npm run tauri dev      # pet en développement (Rust requis)
+cd app && npm run build && cd src-tauri && cargo test   # tests (la CI lance la même chose)
 ./scripts/demo.sh                               # rejoue toutes les animations sans Claude
 ./scripts/make-icon.sh                          # régénère l'icône depuis le pet 3D (serveur de dev lancé)
 ./scripts/make-readme-images.sh                 # régénère les images du README depuis le pet 3D

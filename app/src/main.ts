@@ -17,6 +17,8 @@ hammer.addEventListener("animationiteration", tokOnImpacts);
 
 const typed = document.querySelector<HTMLElement>("#typed")!;
 const bubbleTag = document.querySelector<HTMLElement>("#bubble-tag")!;
+// Économie d'énergie : Rust ralentit sa surveillance et n'envoie plus de positions quand le pet dort.
+let wasSleeping = false;
 let stateTimer: number;
 let bubbleTimer: number;
 let typeTimer: number;
@@ -55,6 +57,11 @@ let typingTimer: number;
 
 function setState(state: string, thenAfterMs?: number, then = "idle") {
   pet.dataset.state = state;
+  const sleeping = state === "sleeping";
+  if (sleeping !== wasSleeping) {
+    wasSleeping = sleeping;
+    invoke("set_sleeping", { sleeping });
+  }
   if (state !== "sleeping") lastActivity = Date.now();
   delete pet.dataset.tool;
   clearInterval(typingTimer);
@@ -516,3 +523,25 @@ function applySettings(s: Settings) {
 }
 invoke<Settings>("get_settings").then(applySettings);
 listen<Settings>("settings", ({ payload }) => applySettings(payload));
+
+// Zones cliquables envoyées à Rust : la fenêtre est transparente sur l'essentiel de sa surface et ne doit pas
+// intercepter les clics destinés aux autres apps. Seuls le pet, la bulle et le champ de chat les reçoivent.
+let lastRegions = "";
+function pushRegions() {
+  const regions: number[][] = [];
+  const add = (el: HTMLElement, padX: number, padTop: number, padBottom: number) => {
+    if (el.hidden) return;
+    const r = el.getBoundingClientRect();
+    regions.push([r.left - padX, r.top - padTop, r.width + 2 * padX, r.height + padTop + padBottom].map(Math.round));
+  };
+  add(pet, 24, 10, 6); // marge : accessoires (marteau, enclume, clavier) un peu en dehors du cadre du pet
+  add(bubble, 6, 14, 6); // 14 en haut : la pastille de projet dépasse du bord
+  add(chat, 6, 6, 6);
+  const key = JSON.stringify(regions);
+  if (key !== lastRegions) {
+    lastRegions = key;
+    invoke("set_hit_regions", { regions });
+  }
+}
+pushRegions();
+setInterval(pushRegions, 100);

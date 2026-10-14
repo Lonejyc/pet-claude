@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri
+
+      - name: Dépendances npm
+        working-directory: app
+        run: npm ci
+
+      - name: Types TypeScript
+        working-directory: app
+        run: npx tsc --noEmit
+
+      # le build du front doit précéder cargo : Tauri embarque le dossier dist à la compilation
+      - name: Build du front
+        working-directory: app
+        run: npm run build
+
+      - name: Tests Rust
+        working-directory: app/src-tauri
+        run: cargo test
+
+      - name: Build de l'app
+        working-directory: app
+        run: npm run tauri build -- --bundles app

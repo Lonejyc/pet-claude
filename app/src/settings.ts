@@ -57,7 +57,7 @@ async function refreshStatus() {
   login.disabled = !st.installed && !st.login;
   $("login-hint").textContent = st.installed ? "À la prochaine ouverture de session" : "Disponible une fois l'app installée dans Applications";
   style.checked = st.style;
-  $("hooks-state").textContent = st.hooks ? "Installés : le pet voit toutes tes sessions Claude" : "Non installés : le pet ne voit aucune session";
+  $("hooks-state").textContent = st.hooks ? "Installés : le pet voit toutes tes sessions Claude" : "Non installés ou à mettre à jour : le pet ne voit pas tes sessions";
   hooksBtn.textContent = st.hooks ? "Retirer" : "Installer";
   hooksBtn.dataset.on = String(!st.hooks);
 }

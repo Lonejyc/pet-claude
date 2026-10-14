@@ -1,5 +1,6 @@
 mod chat;
 mod native;
+mod server;
 mod setup;
 
 use tauri::{Emitter, Manager};
@@ -25,15 +26,23 @@ fn menu_bar_icon(app: &tauri::App) -> tauri::Result<()> {
     use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
     use tauri::tray::TrayIconBuilder;
 
+    let toggle = MenuItem::with_id(app, "toggle", "Masquer le pet", true, None::<&str>)?;
     let settings = MenuItem::with_id(app, "settings", "Réglages…", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quitter pet-claude", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&settings, &PredefinedMenuItem::separator(app)?, &quit])?;
+    let menu = Menu::with_items(app, &[&toggle, &settings, &PredefinedMenuItem::separator(app)?, &quit])?;
+    let toggle_item = toggle.clone();
     TrayIconBuilder::with_id("pet-claude")
         .icon(tauri::image::Image::from_bytes(include_bytes!("../icons/tray.png"))?)
         .icon_as_template(true) // silhouette noire que macOS teinte (blanche en mode sombre)
         .tooltip("pet-claude")
         .menu(&menu)
-        .on_menu_event(|app, event| match event.id.as_ref() {
+        .on_menu_event(move |app, event| match event.id.as_ref() {
+            "toggle" => {
+                if let Some(window) = app.get_webview_window("main") {
+                    let visible = native::toggle_pet(&window);
+                    let _ = toggle_item.set_text(if visible { "Masquer le pet" } else { "Afficher le pet" });
+                }
+            }
             "settings" => open_settings(app),
             "quit" => app.exit(0),
             _ => {}
@@ -107,9 +116,11 @@ pub fn run() {
     if setup::run_cli() {
         return;
     }
+    setup::migrate_legacy();
+    setup::refresh_hooks_if_outdated();
     tauri::Builder::default()
         .plugin(tauri_nspanel::init())
-        .invoke_handler(tauri::generate_handler![native::screens, native::window_origin, native::set_window_origin, native::mouse, native::set_chat_open, chat::ask, quit, open_settings_cmd, setup_status, hooks_enable, style_enable, login_enable, get_settings, save_settings])
+        .invoke_handler(tauri::generate_handler![native::screens, native::window_origin, native::set_window_origin, native::mouse, native::set_chat_open, native::set_hit_regions, native::set_sleeping, chat::ask, quit, open_settings_cmd, setup_status, hooks_enable, style_enable, login_enable, get_settings, save_settings])
         .setup(|app| {
             // Accessory : pas d'icône dans le Dock, requis pour s'afficher au-dessus du plein écran.
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
@@ -123,8 +134,8 @@ pub fn run() {
             allow_offscreen(&app.get_webview_window("main").unwrap());
             key_window_only_when_chatting(&app.get_webview_window("main").unwrap());
             menu_bar_icon(app)?;
-            listen_to_hooks(app.handle().clone());
-            track_cursor(app.get_webview_window("main").unwrap());
+            server::listen(app.handle().clone());
+            native::pointer_loop(app.get_webview_window("main").unwrap());
             Ok(())
         })
         .build(tauri::generate_context!())
@@ -135,48 +146,6 @@ pub fn run() {
                 open_settings(app);
             }
         });
-}
-
-/// Reçoit les hooks de Claude Code (`curl localhost:4242/<Event>`) et les relaie au front.
-fn listen_to_hooks(app: tauri::AppHandle) {
-    std::thread::spawn(move || {
-        let Ok(server) = tiny_http::Server::http("127.0.0.1:4242") else {
-            eprintln!("port 4242 déjà pris : le pet ne recevra pas les hooks");
-            return;
-        };
-        for mut req in server.incoming_requests() {
-            let event = req.url().trim_start_matches('/').to_string();
-            let mut body = String::new();
-            let _ = req.as_reader().read_to_string(&mut body);
-            let v: serde_json::Value = serde_json::from_str(&body).unwrap_or_default();
-            let _ = app.emit(
-                "hook",
-                serde_json::json!({ "event": event, "session": v["session_id"], "cwd": v["cwd"], "tool": v["tool_name"], "message": v["last_assistant_message"] }),
-            );
-            let _ = req.respond(tiny_http::Response::empty(200));
-        }
-    });
-}
-
-/// Envoie au front la position du curseur par rapport au pet (points), pour qu'il se tourne vers lui.
-/// Repère natif macOS (même repère pour la souris et la fenêtre, quel que soit l'écran) ; AppKit exige le thread principal.
-fn track_cursor(window: tauri::WebviewWindow) {
-    let last = std::sync::Arc::new(std::sync::Mutex::new((f64::NAN, f64::NAN)));
-    std::thread::spawn(move || loop {
-        std::thread::sleep(std::time::Duration::from_millis(33));
-        let (w, last) = (window.clone(), last.clone());
-        let _ = window.run_on_main_thread(move || {
-            let m = objc2_app_kit::NSEvent::mouseLocation();
-            let f = native::ns_window(&w).frame();
-            // centre du pet : milieu de la fenêtre, 92 pt au-dessus du bas (36 de marge + moitié du pet)
-            let d = (m.x - (f.origin.x + f.size.width / 2.0), (f.origin.y + 92.0) - m.y);
-            let mut last = last.lock().unwrap();
-            if d != *last {
-                *last = d;
-                let _ = w.emit("cursor", d);
-            }
-        });
-    });
 }
 
 /// Remplace `canBecomeKeyWindow` du panel par la valeur de `CHAT_OPEN` (la macro de tauri-nspanel ne permet qu'une valeur fixe).

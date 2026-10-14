@@ -131,12 +131,12 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
 
 /* Clignement : les yeux ouverts se ferment une fraction de seconde (et restent fermés pendant le sommeil). */
 #pet.blink .eyes-open rect, #pet[data-state="sleeping"] .eyes-open rect { transform-box: fill-box; transform-origin: center; transform: scaleY(0.12); }
-#pet[data-state="sleeping"] { transform-origin: 50% 100%; animation: breathe 3s ease-in-out infinite; }
+#pet[data-state="sleeping"] { transform-origin: 50% 100%; animation: breathe 3s steps(12) infinite; } /* par paliers : l'animation ne redessine que ~8 fois par seconde au lieu de 60 */
 #pet[data-state="sleeping"] .rig { transform: rotateX(8deg); } /* tête penchée, il ne suit plus la souris */
 @keyframes breathe { 50% { transform: scaleY(1.03); } }
 .zzz { display: none; position: absolute; left: 105px; top: 0; }
 #pet[data-state="sleeping"] .zzz { display: block; }
-.zzz span { position: absolute; font: 700 20px "Chalkboard SE", "Comic Sans MS", cursive; color: #5b6b8a; opacity: 0; animation: zzz 3s ease-out infinite; }
+.zzz span { position: absolute; font: 700 20px "Chalkboard SE", "Comic Sans MS", cursive; color: #5b6b8a; opacity: 0; animation: zzz 3s steps(24) infinite; } /* ~10 images par seconde : suffisant pour des "z" lents, 6 fois moins coûteux */
 .zzz span:nth-child(2) { animation-delay: 1s; }
 .zzz span:nth-child(3) { animation-delay: 2s; }
 @keyframes zzz { 0% { opacity: 0; transform: translate(0, 10px) scale(0.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(18px, -36px) scale(1.3); } }

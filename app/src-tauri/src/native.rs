@@ -4,6 +4,8 @@
 use objc2::MainThreadMarker;
 use objc2_app_kit::{NSApplication, NSApplicationActivationPolicy, NSEvent, NSScreen, NSWindow};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use tauri::Emitter;
 use objc2_foundation::{NSPoint, NSRect};
 use serde::Serialize;
 use tauri::WebviewWindow;
@@ -92,4 +94,82 @@ pub fn set_dock_visible(visible: bool) {
         #[allow(deprecated)]
         app.activateIgnoringOtherApps(true);
     }
+}
+
+// ---- pointeur : clics à travers les zones transparentes, suivi du regard, économie d'énergie
+
+/// Pet endormi : il ne suit plus la souris, on ralentit la surveillance et on arrête d'envoyer des positions au front.
+pub static SLEEPING: AtomicBool = AtomicBool::new(false);
+/// Pet masqué depuis le menu de la barre de menus : plus rien à surveiller.
+pub static HIDDEN: AtomicBool = AtomicBool::new(false);
+/// Zones cliquables [x, y, largeur, hauteur] en px depuis le haut gauche de la fenêtre, envoyées par le front (pet, bulle, champ de chat).
+static HIT_REGIONS: Mutex<Vec<[f64; 4]>> = Mutex::new(Vec::new());
+
+#[tauri::command]
+pub fn set_hit_regions(regions: Vec<[f64; 4]>) {
+    *HIT_REGIONS.lock().unwrap() = regions;
+}
+
+#[tauri::command]
+pub fn set_sleeping(sleeping: bool) {
+    SLEEPING.store(sleeping, Ordering::Relaxed);
+}
+
+/// Masque ou ré-affiche le pet ; retourne true s'il est maintenant visible.
+pub fn toggle_pet(window: &WebviewWindow) -> bool {
+    let show = HIDDEN.load(Ordering::Relaxed);
+    HIDDEN.store(!show, Ordering::Relaxed);
+    let w = ns_window(window);
+    if show {
+        w.orderFrontRegardless();
+    } else {
+        w.orderOut(None);
+    }
+    show
+}
+
+/// Une fenêtre transparente intercepte les clics sur toute sa surface : on la rend "traversante" tant que la souris n'est
+/// pas sur une zone cliquable. Pendant un clic ou un glisser (bouton enfoncé), on ne change rien pour ne pas lâcher le pet.
+fn update_click_through(window: &WebviewWindow) {
+    if NSEvent::pressedMouseButtons() != 0 {
+        return;
+    }
+    let w = ns_window(window);
+    let f = w.frame();
+    let m = NSEvent::mouseLocation();
+    let (x, y) = (m.x - f.origin.x, f.size.height - (m.y - f.origin.y));
+    let over = HIT_REGIONS.lock().unwrap().iter().any(|[rx, ry, rw, rh]| x >= *rx && x <= rx + rw && y >= *ry && y <= ry + rh);
+    if w.ignoresMouseEvents() == over {
+        w.setIgnoresMouseEvents(!over);
+    }
+}
+
+/// Boucle de surveillance du pointeur (thread dédié, AppKit sur le thread principal). Remplace l'ancien `track_cursor`.
+/// Cadence : 33 ms normalement, 100 ms endormi (les clics doivent pouvoir le réveiller), 500 ms masqué.
+pub fn pointer_loop(window: WebviewWindow) {
+    let last = Arc::new(Mutex::new((f64::NAN, f64::NAN)));
+    std::thread::spawn(move || loop {
+        let hidden = HIDDEN.load(Ordering::Relaxed);
+        let ms = if hidden { 500 } else if SLEEPING.load(Ordering::Relaxed) { 100 } else { 33 };
+        std::thread::sleep(std::time::Duration::from_millis(ms));
+        if hidden {
+            continue;
+        }
+        let (w, last) = (window.clone(), last.clone());
+        let _ = window.run_on_main_thread(move || {
+            update_click_through(&w);
+            if SLEEPING.load(Ordering::Relaxed) {
+                return;
+            }
+            let m = NSEvent::mouseLocation();
+            let f = ns_window(&w).frame();
+            // centre du pet : milieu de la fenêtre, 92 pt au-dessus du bas (36 de marge + moitié du pet)
+            let d = (m.x - (f.origin.x + f.size.width / 2.0), (f.origin.y + 92.0) - m.y);
+            let mut last = last.lock().unwrap();
+            if d != *last {
+                *last = d;
+                let _ = w.emit("cursor", d);
+            }
+        });
+    });
 }

@@ -15,24 +15,24 @@
   </choices-outline>
 
   <choice id="app" title="pet-claude" description="L'application, copiée dans Applications." enabled="false" start_selected="true">
-    <pkg-ref id="fr.perso.petclaude.app"/>
+    <pkg-ref id="io.github.lonejyc.pet-claude.app"/>
   </choice>
   <choice id="hooks" title="Connecter Claude Code (recommandé)" description="Ajoute cinq hooks dans ~/.claude/settings.json (sauvegarde faite avant). Sans eux, le pet ne voit aucune de tes sessions Claude Code." start_selected="true">
-    <pkg-ref id="fr.perso.petclaude.hooks"/>
+    <pkg-ref id="io.github.lonejyc.pet-claude.hooks"/>
   </choice>
   <choice id="login" title="Lancer au démarrage de session" description="Le pet apparaît à chaque ouverture de session macOS." start_selected="true">
-    <pkg-ref id="fr.perso.petclaude.login"/>
+    <pkg-ref id="io.github.lonejyc.pet-claude.login"/>
   </choice>
   <choice id="style" title="Personnalité « Pet » pour toutes les sessions Claude" description="Ajoute une ligne 🟧 en tête de chaque réponse de toutes tes sessions : c'est cette ligne que le pet dit dans sa bulle. Change le ton de tes sessions Claude." start_selected="false">
-    <pkg-ref id="fr.perso.petclaude.style"/>
+    <pkg-ref id="io.github.lonejyc.pet-claude.style"/>
   </choice>
   <choice id="launch" visible="false" start_selected="true">
-    <pkg-ref id="fr.perso.petclaude.launch"/>
+    <pkg-ref id="io.github.lonejyc.pet-claude.launch"/>
   </choice>
 
-  <pkg-ref id="fr.perso.petclaude.app" version="__VERSION__">app.pkg</pkg-ref>
-  <pkg-ref id="fr.perso.petclaude.hooks" version="__VERSION__">hooks.pkg</pkg-ref>
-  <pkg-ref id="fr.perso.petclaude.login" version="__VERSION__">login.pkg</pkg-ref>
-  <pkg-ref id="fr.perso.petclaude.style" version="__VERSION__">style.pkg</pkg-ref>
-  <pkg-ref id="fr.perso.petclaude.launch" version="__VERSION__">launch.pkg</pkg-ref>
+  <pkg-ref id="io.github.lonejyc.pet-claude.app" version="__VERSION__">app.pkg</pkg-ref>
+  <pkg-ref id="io.github.lonejyc.pet-claude.hooks" version="__VERSION__">hooks.pkg</pkg-ref>
+  <pkg-ref id="io.github.lonejyc.pet-claude.login" version="__VERSION__">login.pkg</pkg-ref>
+  <pkg-ref id="io.github.lonejyc.pet-claude.style" version="__VERSION__">style.pkg</pkg-ref>
+  <pkg-ref id="io.github.lonejyc.pet-claude.launch" version="__VERSION__">launch.pkg</pkg-ref>
 </installer-gui-script>
