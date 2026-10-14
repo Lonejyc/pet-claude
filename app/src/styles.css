@@ -1,0 +1,24 @@
+html, body { margin: 0; background: transparent; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; }
+body { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+#bubble {
+  position: relative; box-sizing: border-box; max-width: 260px; margin-bottom: 16px; padding: 6px 14px;
+  background: #fff; color: #222; border: 3px solid #222; border-radius: 18px; box-shadow: 3px 3px 0 #222;
+  font: 700 14px/1.35 "Chalkboard SE", "Comic Sans MS", "Bradley Hand", cursive;
+  transform-origin: 50% 100%; animation: pop 0.2s ease-out;
+}
+#bubble-text { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* queue de la bulle : un triangle noir (contour) et un blanc (remplissage) */
+#bubble::before, #bubble::after {
+  content: ""; position: absolute; left: 50%; border: solid transparent; transform: translateX(-50%);
+}
+#bubble::before { bottom: -17px; border-width: 14px 11px 0; border-top-color: #222; }
+#bubble::after { bottom: -11px; border-width: 11px 8px 0; border-top-color: #fff; }
+#bubble[hidden] { display: none; }
+#pet { font-size: 96px; line-height: 1; user-select: none; cursor: grab; animation: bounce 1.6s ease-in-out infinite; }
+#pet[data-state="working"] { animation: wiggle 2s ease-in-out infinite; }
+#pet[data-state="talking"] { animation: talk 0.25s ease-in-out infinite; }
+@keyframes bounce { 50% { transform: translateY(-10px); } }
+/* un aller-retour gauche/droite (0,4 s) puis 1,6 s de pause */
+@keyframes wiggle { 5% { transform: rotate(-8deg); } 15% { transform: rotate(8deg); } 20%, 100% { transform: none; } }
+@keyframes talk { 50% { transform: translateY(-6px) scaleY(0.96); } }
+@keyframes pop { from { transform: scale(0.6); opacity: 0; } }
