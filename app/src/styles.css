@@ -12,12 +12,22 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
   border: 2px solid #222; border-radius: 10px; background: var(--tag); color: #fff; font: 700 10px/15px system-ui, sans-serif; }
 #bubble-tag[hidden] { display: none; }
 /* queue de la bulle : un triangle noir (contour) et un blanc (remplissage) */
-#bubble::before, #bubble::after {
+#bubble::before, #bubble::after, #chat::before, #chat::after {
   content: ""; position: absolute; left: 50%; border: solid transparent; transform: translateX(-50%);
 }
-#bubble::before { bottom: -17px; border-width: 14px 11px 0; border-top-color: #222; }
-#bubble::after { bottom: -11px; border-width: 11px 8px 0; border-top-color: #fff; }
+#bubble::before, #chat::before { bottom: -17px; border-width: 14px 11px 0; border-top-color: #222; }
+#bubble::after, #chat::after { bottom: -11px; border-width: 11px 8px 0; border-top-color: #fff; }
 #bubble[hidden] { display: none; }
+#chat { position: relative; margin-bottom: 16px; animation: pop 0.2s ease-out; transform-origin: 50% 100%; }
+#chat[hidden] { display: none; }
+#chat input { width: 250px; box-sizing: border-box; padding: 6px 14px; background: #fff; color: #222; border: 3px solid #222; border-radius: 18px;
+  box-shadow: 3px 3px 0 #222; outline: none; font: 700 14px/1.35 "Chalkboard SE", "Comic Sans MS", "Bradley Hand", cursive; }
+#chat input::placeholder { color: #888; }
+/* session visée par la question : une pastille par session ouverte, la choisie est pleine */
+#chat-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-bottom: 8px; }
+#chat-chips span { padding: 0 8px; border: 2px solid #222; border-radius: 10px; background: var(--tag); color: #fff; cursor: pointer;
+  font: 700 10px/15px system-ui, sans-serif; opacity: 0.55; }
+#chat-chips span.selected { opacity: 1; box-shadow: 2px 2px 0 #222; }
 #pet {
   --rx: 0; --ry: 0; --lx: 0; --ly: 0; --k: 1; /* regard et orientation, pilotés par la position du curseur */
   position: relative; width: 150px; height: 112px; perspective: 600px; user-select: none; cursor: grab; animation: bounce 1.6s ease-in-out infinite;

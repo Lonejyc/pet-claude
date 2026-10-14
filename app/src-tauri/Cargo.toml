@@ -21,7 +21,7 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["macos-private-api"] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = { version = "1", features = ["preserve_order"] }
 tiny_http = "0.12"
 
 
@@ -37,4 +37,4 @@ strip = true
 tauri-nspanel = "2.1"
 objc2 = "0.6"
 objc2-foundation = { version = "0.3", features = ["NSGeometry", "NSArray"] }
-objc2-app-kit = { version = "0.3", features = ["NSScreen", "NSEvent", "NSWindow", "NSResponder"] }
+objc2-app-kit = { version = "0.3", features = ["NSScreen", "NSEvent", "NSWindow", "NSResponder", "NSApplication"] }

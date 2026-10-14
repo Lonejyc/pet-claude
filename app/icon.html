@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- Source de l'icône : rend le vrai pet 3D. Généré par ../scripts/make-icon.sh (serveur de dev lancé). -->
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <style>
+      html, body { width: 1024px; height: 1024px; margin: 0; background: transparent; overflow: hidden; display: block; }
+      .plate { position: absolute; left: 100px; top: 100px; width: 824px; height: 824px; border-radius: 186px; overflow: hidden;
+        background: radial-gradient(ellipse at 28% 18%, #6a5fd0 0%, #3b3485 45%, #221d52 100%);
+        box-shadow: 0 22px 46px rgba(10, 6, 40, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.18); }
+      .floor { position: absolute; left: 190px; top: 540px; width: 450px; height: 70px; border-radius: 50%; background: radial-gradient(closest-side, rgba(8, 4, 30, 0.7), transparent); filter: blur(10px); }
+      .stage { position: absolute; left: 212px; top: 246px; width: 150px; height: 112px; transform: scale(4.1); transform-origin: 0 0;
+        perspective: 700px; --rx: -5; --ry: 24; --lx: 0.6; --ly: 0.3; }
+      .stage .rig { transition: none; }
+    </style>
+  </head>
+  <body>
+    <div class="plate">
+      <div class="floor"></div>
+    </div>
+    <div class="stage"><div id="rig" class="rig"></div></div>
+    <script type="module">
+      import { buildPet } from "/src/pet3d.ts";
+      buildPet(document.getElementById("rig"));
+    </script>
+  </body>
+</html>

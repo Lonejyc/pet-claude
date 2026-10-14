@@ -1,4 +1,6 @@
+mod chat;
 mod native;
+mod setup;
 
 use tauri::{Emitter, Manager};
 use tauri_nspanel::{tauri_panel, CollectionBehavior, PanelLevel, StyleMask, WebviewWindowExt};
@@ -12,12 +14,81 @@ tauri_panel! {
     })
 }
 
+/// Sans icône dans le Dock ni menu, l'app installée n'a pas d'autre moyen de se fermer : taper /quit dans le chat.
+#[tauri::command]
+fn quit(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
+pub fn open_settings(app: &tauri::AppHandle) {
+    native::set_dock_visible(true);
+    if let Some(w) = app.get_webview_window("settings") {
+        let _ = w.show();
+        let _ = w.set_focus();
+        return;
+    }
+    let built = tauri::WebviewWindowBuilder::new(app, "settings", tauri::WebviewUrl::App("settings.html".into()))
+        .title("Réglages de pet-claude")
+        .inner_size(460.0, 640.0)
+        .resizable(false)
+        .build();
+    match built {
+        Ok(w) => w.on_window_event(|e| {
+            if let tauri::WindowEvent::Destroyed = e {
+                native::set_dock_visible(false);
+            }
+        }),
+        Err(e) => eprintln!("fenêtre de réglages : {e}"),
+    }
+}
+
+#[tauri::command]
+fn open_settings_cmd(app: tauri::AppHandle) {
+    open_settings(&app);
+}
+
+#[tauri::command]
+fn setup_status() -> serde_json::Value {
+    let installed = std::env::current_exe().is_ok_and(|e| e.to_string_lossy().contains(".app/Contents/MacOS/"));
+    serde_json::json!({ "hooks": setup::hooks_installed(), "style": setup::style_enabled(), "login": setup::login_enabled(), "installed": installed })
+}
+
+#[tauri::command]
+fn hooks_enable(on: bool) -> Result<(), String> {
+    setup::set_hooks(on)
+}
+
+#[tauri::command]
+fn style_enable(on: bool) -> Result<(), String> {
+    setup::set_style(on)
+}
+
+#[tauri::command]
+fn login_enable(on: bool) -> Result<(), String> {
+    setup::set_login(on)
+}
+
+#[tauri::command]
+fn get_settings() -> serde_json::Value {
+    setup::read_settings()
+}
+
+/// Enregistre et prévient toutes les fenêtres (le pet applique les réglages en direct).
+#[tauri::command]
+fn save_settings(app: tauri::AppHandle, settings: serde_json::Value) -> Result<(), String> {
+    setup::write_settings(&settings)?;
+    app.emit("settings", setup::read_settings()).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    if setup::run_cli() {
+        return;
+    }
     tauri::Builder::default()
         .plugin(tauri_nspanel::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![native::screens, native::window_origin, native::set_window_origin, native::mouse])
+        .invoke_handler(tauri::generate_handler![native::screens, native::window_origin, native::set_window_origin, native::mouse, native::set_chat_open, chat::ask, quit, open_settings_cmd, setup_status, hooks_enable, style_enable, login_enable, get_settings, save_settings])
         .setup(|app| {
             // Accessory : pas d'icône dans le Dock, requis pour s'afficher au-dessus du plein écran.
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
@@ -29,12 +100,19 @@ pub fn run() {
                 CollectionBehavior::new().full_screen_auxiliary().can_join_all_spaces().into(),
             );
             allow_offscreen(&app.get_webview_window("main").unwrap());
+            key_window_only_when_chatting(&app.get_webview_window("main").unwrap());
             listen_to_hooks(app.handle().clone());
             track_cursor(app.get_webview_window("main").unwrap());
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            // relancer l'app (Launchpad, Spotlight, Finder) alors qu'elle tourne déjà ouvre les réglages
+            if let tauri::RunEvent::Reopen { .. } = event {
+                open_settings(app);
+            }
+        });
 }
 
 /// Reçoit les hooks de Claude Code (`curl localhost:4242/<Event>`) et les relaie au front.
@@ -77,6 +155,24 @@ fn track_cursor(window: tauri::WebviewWindow) {
             }
         });
     });
+}
+
+/// Remplace `canBecomeKeyWindow` du panel par la valeur de `CHAT_OPEN` (la macro de tauri-nspanel ne permet qu'une valeur fixe).
+fn key_window_only_when_chatting(window: &tauri::WebviewWindow) {
+    use objc2::ffi::class_replaceMethod;
+    use objc2::runtime::{AnyClass, AnyObject, Bool, Sel};
+    use objc2::sel;
+
+    extern "C" fn can_become_key(_this: *mut AnyObject, _cmd: Sel) -> Bool {
+        Bool::new(native::CHAT_OPEN.load(std::sync::atomic::Ordering::Relaxed))
+    }
+
+    unsafe {
+        let ns_window = &*(window.ns_window().unwrap() as *const AnyObject);
+        let class: &AnyClass = ns_window.class();
+        let imp: objc2::runtime::Imp = std::mem::transmute(can_become_key as extern "C" fn(*mut AnyObject, Sel) -> Bool);
+        class_replaceMethod(class as *const AnyClass as *mut _, sel!(canBecomeKeyWindow), imp, c"B@:".as_ptr());
+    }
 }
 
 /// macOS replaque d'office une fenêtre sous la barre de menu (`constrainFrameRect:toScreen:`).

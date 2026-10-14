@@ -2,7 +2,8 @@
 //! Les conversions de Tauri/tao se mélangent entre écrans d'échelles ou de hauteurs différentes (le pet apparaissait en double) :
 //! ici tout est en points, y vers le bas, origine en haut à gauche de l'écran principal.
 use objc2::MainThreadMarker;
-use objc2_app_kit::{NSEvent, NSScreen, NSWindow};
+use objc2_app_kit::{NSApplication, NSApplicationActivationPolicy, NSEvent, NSScreen, NSWindow};
+use std::sync::atomic::{AtomicBool, Ordering};
 use objc2_foundation::{NSPoint, NSRect};
 use serde::Serialize;
 use tauri::WebviewWindow;
@@ -60,4 +61,35 @@ pub fn set_window_origin(window: WebviewWindow, x: f64, y: f64) {
 pub fn mouse() -> (f64, f64) {
     let m = NSEvent::mouseLocation();
     (m.x, primary_height(main_thread()) - m.y)
+}
+
+/// Le panel du pet ne doit jamais prendre le clavier (sinon cliquer ou glisser le pet volerait le focus du terminal),
+/// sauf pendant le mini-chat : `canBecomeKeyWindow` (cf. lib.rs) renvoie ce drapeau.
+pub static CHAT_OPEN: AtomicBool = AtomicBool::new(false);
+
+#[tauri::command]
+pub fn set_chat_open(window: WebviewWindow, open: bool) {
+    CHAT_OPEN.store(open, Ordering::Relaxed);
+    let app = NSApplication::sharedApplication(main_thread());
+    let w = ns_window(&window);
+    if open {
+        #[allow(deprecated)]
+        app.activateIgnoringOtherApps(true);
+        w.makeKeyWindow();
+    } else {
+        // rend la main à l'application précédente (le terminal)
+        app.hide(None);
+        w.orderFrontRegardless();
+    }
+}
+
+/// Icône dans le Dock (et menu de l'app) seulement pendant les réglages. Le reste du temps l'app est "Accessory", ce qui
+/// est nécessaire pour que le pet reste visible au-dessus des apps en plein écran.
+pub fn set_dock_visible(visible: bool) {
+    let app = NSApplication::sharedApplication(main_thread());
+    app.setActivationPolicy(if visible { NSApplicationActivationPolicy::Regular } else { NSApplicationActivationPolicy::Accessory });
+    if visible {
+        #[allow(deprecated)]
+        app.activateIgnoringOtherApps(true);
+    }
 }

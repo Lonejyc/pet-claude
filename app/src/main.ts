@@ -1,8 +1,8 @@
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { buildPet } from "./pet3d";
-import { anyBusy, color, count, ignored, label, prune, remove, touch, type Session } from "./sessions";
-import { sound } from "./sound";
+import { all, anyBusy, color, count, ignored, label, mostRecent, prune, remove, touch, type Session } from "./sessions";
+import { setSoundConfig, sound } from "./sound";
 
 type Hook = { event: string; session?: string | null; cwd?: string | null; tool?: string; message?: string };
 
@@ -22,7 +22,7 @@ let bubbleTimer: number;
 let typeTimer: number;
 
 // Budget de répétition : pas de bulle si le pet a parlé il y a moins de 12 s, sauf si un outil a échoué pendant le tour.
-const COOLDOWN_MS = 12_000;
+let COOLDOWN_MS = 12_000; // réglable (fenêtre de réglages)
 let lastSpokeAt = 0;
 
 // Outil en cours -> accessoire du pet (cf. [data-tool] dans styles.css)
@@ -70,12 +70,14 @@ const firstSentence = (text: string) => {
 };
 
 // Texte tapé lettre par lettre ; le pet "parle" (petits sauts) tant qu'il tape.
-function say(text: string, session: Session) {
+function say(text: string, session?: Session) {
   const full = firstSentence(text);
   // pastille du projet seulement s'il y a plusieurs sessions : sinon c'est du bruit
-  bubbleTag.hidden = count() < 2;
-  bubbleTag.textContent = label(session);
-  bubble.style.setProperty("--tag", color(session));
+  bubbleTag.hidden = !session || count() < 2;
+  if (session) {
+    bubbleTag.textContent = label(session);
+    bubble.style.setProperty("--tag", color(session));
+  }
   let i = 0;
   lastSpokeAt = Date.now();
   clearInterval(typeTimer);
@@ -126,7 +128,7 @@ listen<Hook>("hook", ({ payload }) => {
     session.busy = false;
     if (payload.message && (session.failed || Date.now() - lastSpokeAt > COOLDOWN_MS)) say(payload.message, session);
     else settle();
-    if (session.tools >= CONFETTI_MIN_TOOLS && !session.failed) confetti();
+    if (CONFETTI && session.tools >= CONFETTI_MIN_TOOLS && !session.failed) confetti();
     session.failed = false;
     session.tools = 0;
   }
@@ -351,7 +353,8 @@ pet.addEventListener("animationend", (e) => {
 });
 
 // Vie autonome : il cligne des yeux, et s'endort après SLEEP_AFTER_MS sans rien faire (n'importe quel hook ou clic le réveille).
-const SLEEP_AFTER_MS = 60_000;
+let SLEEP_AFTER_MS = 60_000; // réglable (fenêtre de réglages)
+let CONFETTI = true; // réglable (fenêtre de réglages)
 let lastActivity = Date.now();
 
 function wake() {
@@ -382,3 +385,134 @@ listen<[number, number]>("cursor", ({ payload: [dx, dy] }) => {
   pet.style.setProperty("--lx", String(clamp(dx) * 3));
   pet.style.setProperty("--ly", String(clamp(dy) * 2));
 });
+
+// Mini-chat : double-clic sur le pet -> champ de saisie ; Entrée envoie, Échap ou clic ailleurs ferme, Tab change de session.
+// La question part dans une COPIE de la session visée (lecture seule, cf. chat.rs) : la session du terminal n'est pas touchée.
+const chat = document.querySelector<HTMLElement>("#chat")!;
+const chatInput = document.querySelector<HTMLInputElement>("#chat-input")!;
+const chips = document.querySelector<HTMLElement>("#chat-chips")!;
+let chatOpen = false;
+let target: Session | undefined; // session visée : par défaut la plus récemment active
+
+function renderChips() {
+  chips.replaceChildren(
+    ...all().map((s) => {
+      const chip = document.createElement("span");
+      chip.textContent = label(s);
+      chip.style.setProperty("--tag", color(s));
+      chip.classList.toggle("selected", s === target);
+      chip.addEventListener("click", () => {
+        target = s;
+        renderChips();
+        chatInput.focus();
+      });
+      return chip;
+    }),
+  );
+}
+
+async function openChat() {
+  if (chatOpen) return;
+  chatOpen = true;
+  clearTimeout(bubbleTimer);
+  bubble.hidden = true;
+  chatInput.value = "";
+  target = mostRecent();
+  renderChips();
+  chat.hidden = false;
+  await invoke("set_chat_open", { open: true });
+  chatInput.focus();
+}
+
+function closeChat() {
+  if (!chatOpen) return;
+  chatOpen = false;
+  chat.hidden = true;
+  invoke("set_chat_open", { open: false });
+}
+
+// --- réponse en streaming
+const ANSWER_MAX_CHARS = 140; // la bulle ne doit pas sortir par le haut de la fenêtre
+type Asking = { id: string; session?: Session; raw: string };
+let asking: Asking | null = null;
+
+const shorten = (text: string) => {
+  const t = text.replace(/[*`#>_🟧]/gu, "").replace(/\s+/g, " ").trim();
+  return t.length > ANSWER_MAX_CHARS ? t.slice(0, ANSWER_MAX_CHARS - 1) + "…" : t;
+};
+
+function showAnswer(text: string) {
+  typed.textContent = text;
+  bubble.hidden = false;
+}
+
+function ask(question: string) {
+  const fork = crypto.randomUUID();
+  ignored.add(fork); // les hooks de la copie ne sont pas de vraies sessions
+  const session = target;
+  asking = { id: crypto.randomUUID(), session, raw: "" };
+  clearInterval(typeTimer);
+  clearTimeout(bubbleTimer);
+  bubbleTag.hidden = !session || count() < 2;
+  if (session) {
+    bubbleTag.textContent = label(session);
+    bubble.style.setProperty("--tag", color(session));
+  }
+  showAnswer("…");
+  setState("working");
+  lastSpokeAt = Date.now();
+  invoke("ask", { id: asking.id, question, resume: session?.id ?? null, cwd: session?.cwd || null, fork });
+}
+
+listen<{ id: string; kind: "delta" | "done" | "error"; text: string }>("chat", ({ payload }) => {
+  if (!asking || payload.id !== asking.id) return;
+  if (payload.kind === "delta") {
+    asking.raw += payload.text;
+    showAnswer(shorten(asking.raw));
+    setState("talking");
+    sound.blip();
+    return;
+  }
+  const failed = payload.kind === "error" || !asking.raw;
+  if (failed) {
+    showAnswer("Aïe, je n'ai pas réussi à te répondre.");
+    setState("worried", 2500);
+    sound.worried();
+  } else {
+    settle();
+  }
+  asking = null;
+  bubbleTimer = setTimeout(() => (bubble.hidden = true), 10_000);
+});
+
+pet.addEventListener("dblclick", openChat);
+chatInput.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeChat();
+  if (e.key === "Tab") {
+    e.preventDefault();
+    const list = all();
+    if (list.length) target = list[(list.indexOf(target as Session) + 1) % list.length];
+    renderChips();
+  }
+  if (e.key === "Enter" && !e.isComposing && chatInput.value.trim() && !asking) {
+    const question = chatInput.value.trim();
+    closeChat();
+    if (question === "/quit") invoke("quit");
+    else if (question === "/settings") invoke("open_settings_cmd");
+    else ask(question);
+  }
+});
+// clic sur une pastille : ne pas perdre le focus, sinon le chat se ferme
+chips.addEventListener("mousedown", (e) => e.preventDefault());
+chatInput.addEventListener("blur", () => setTimeout(closeChat, 150));
+
+// Réglages (fenêtre de réglages) : lus au démarrage, puis appliqués en direct à chaque changement.
+type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; volume: number };
+function applySettings(s: Settings) {
+  COOLDOWN_MS = s.cooldownSec * 1000;
+  SLEEP_AFTER_MS = s.sleepAfterSec * 1000;
+  CONFETTI = s.confetti;
+  setSoundConfig({ enabled: s.sound, volume: s.volume });
+}
+invoke<Settings>("get_settings").then(applySettings);
+listen<Settings>("settings", ({ payload }) => applySettings(payload));

@@ -1,7 +1,15 @@
 // Sons synthétisés (WebAudio, aucun fichier). Le contexte démarre suspendu tant que l'utilisateur n'a pas cliqué dans la fenêtre.
 const ctx = new AudioContext();
 
+let enabled = true;
+let volume = 1;
+export const setSoundConfig = (cfg: { enabled: boolean; volume: number }) => {
+  enabled = cfg.enabled;
+  volume = cfg.volume;
+};
+
 function tone(from: number, to: number, ms: number, type: OscillatorType = "square", vol = 0.04, delayMs = 0) {
+  if (!enabled || volume === 0) return;
   if (ctx.state === "suspended") ctx.resume();
   const t = ctx.currentTime + delayMs / 1000;
   const end = t + ms / 1000;
@@ -10,7 +18,7 @@ function tone(from: number, to: number, ms: number, type: OscillatorType = "squa
   osc.type = type;
   osc.frequency.setValueAtTime(from, t);
   osc.frequency.exponentialRampToValueAtTime(to, end);
-  gain.gain.setValueAtTime(vol, t);
+  gain.gain.setValueAtTime(vol * volume, t);
   gain.gain.exponentialRampToValueAtTime(0.0001, end);
   osc.connect(gain).connect(ctx.destination);
   osc.start(t);

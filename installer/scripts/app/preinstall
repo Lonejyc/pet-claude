@@ -1,0 +1,4 @@
+#!/bin/sh
+# Ferme une instance déjà lancée avant de remplacer l'app.
+/usr/bin/pkill -f "pet-claude.app/Contents/MacOS/app" 2>/dev/null
+exit 0
