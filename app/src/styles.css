@@ -14,7 +14,7 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
 #bubble::before { bottom: -17px; border-width: 14px 11px 0; border-top-color: #222; }
 #bubble::after { bottom: -11px; border-width: 11px 8px 0; border-top-color: #fff; }
 #bubble[hidden] { display: none; }
-#pet { font-size: 96px; line-height: 1; user-select: none; cursor: grab; animation: bounce 1.6s ease-in-out infinite; }
+#pet { line-height: 0; user-select: none; cursor: grab; animation: bounce 1.6s ease-in-out infinite; }
 #pet[data-state="working"] { animation: wiggle 2s ease-in-out infinite; }
 #pet[data-state="talking"] { animation: talk 0.25s ease-in-out infinite; }
 @keyframes bounce { 50% { transform: translateY(-10px); } }
@@ -22,3 +22,24 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
 @keyframes wiggle { 5% { transform: rotate(-8deg); } 15% { transform: rotate(8deg); } 20%, 100% { transform: none; } }
 @keyframes talk { 50% { transform: translateY(-6px) scaleY(0.96); } }
 @keyframes pop { from { transform: scale(0.6); opacity: 0; } }
+#pet svg { pointer-events: none; transform-origin: 50% 100%; transition: transform 0.08s ease-out; }
+/* écrasé tant qu'on appuie, puis rebond de balle au relâchement */
+#pet.pressed svg { transform: scale(1.1, 0.8); }
+#pet.boing svg { animation: boing 0.5s ease-out; }
+@keyframes boing { 0% { transform: scale(1.1, 0.8); } 35% { transform: scale(0.95, 1.08); } 65% { transform: scale(1.02, 0.98); } 100% { transform: none; } }
+.eyes-squint, .mouth { display: none; }
+#pet[data-state="working"] .eyes-open { display: none; }
+#pet[data-state="working"] .eyes-squint { display: inline; }
+#pet[data-state="talking"] .mouth { display: inline; animation: mouth 0.25s steps(1) infinite; }
+@keyframes mouth { 50% { transform: scaleY(0.3); transform-origin: 60px 53px; } }
+
+/* Pris en main : il ne touche plus le sol, il panique. Relâché : il retombe. */
+#pet.held { animation: panic 0.12s ease-in-out infinite alternate; }
+#pet.held .eyes-open rect { transform-box: fill-box; transform-origin: center; transform: scale(1.3); }
+#pet.held .mouth { display: inline; transform-box: fill-box; transform-origin: center; transform: scaleY(1.8); animation: none; }
+#pet.held .leg { transform-box: fill-box; transform-origin: top; animation: dangle 0.15s ease-in-out infinite alternate; }
+#pet.held .leg:nth-child(even) { animation-direction: alternate-reverse; }
+#pet.drop svg { animation: drop 0.35s ease-in; }
+@keyframes panic { from { transform: translate(-2px, -14px) rotate(-5deg); } to { transform: translate(2px, -14px) rotate(5deg); } }
+@keyframes dangle { from { transform: rotate(-18deg); } to { transform: rotate(18deg); } }
+@keyframes drop { 0% { transform: translateY(-14px); } 45% { transform: scale(1.08, 0.88); } 70% { transform: scale(0.98, 1.03); } 100% { transform: none; } }

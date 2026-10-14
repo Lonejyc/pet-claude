@@ -9,6 +9,29 @@
   </head>
   <body>
     <div id="bubble" hidden><span id="bubble-text"></span></div>
-    <div id="pet" data-state="idle" data-tauri-drag-region>🦊</div>
+    <div id="pet" data-state="idle">
+      <svg viewBox="0 0 120 90" width="150" height="112" shape-rendering="crispEdges" aria-hidden="true">
+        <g fill="#e8793c">
+          <rect x="22" y="12" width="76" height="54" />
+          <rect x="8" y="34" width="14" height="14" />
+          <rect x="98" y="34" width="14" height="14" />
+          <rect class="leg" x="30" y="66" width="8" height="16" />
+          <rect class="leg" x="44" y="66" width="8" height="16" />
+          <rect class="leg" x="68" y="66" width="8" height="16" />
+          <rect class="leg" x="82" y="66" width="8" height="16" />
+        </g>
+        <rect x="22" y="12" width="76" height="6" fill="#f2985f" />
+        <rect x="92" y="18" width="6" height="48" fill="#c9622a" />
+        <g class="eyes-open" fill="#1a1a1a">
+          <rect x="40" y="30" width="8" height="16" />
+          <rect x="72" y="30" width="8" height="16" />
+        </g>
+        <g class="eyes-squint" fill="none" stroke="#1a1a1a" stroke-width="4" stroke-linecap="square">
+          <polyline points="38,30 50,38 38,46" />
+          <polyline points="82,30 70,38 82,46" />
+        </g>
+        <rect class="mouth" x="54" y="50" width="12" height="7" fill="#1a1a1a" />
+      </svg>
+    </div>
   </body>
 </html>
