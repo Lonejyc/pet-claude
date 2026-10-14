@@ -51,7 +51,7 @@ fn listen_to_hooks(app: tauri::AppHandle) {
             let v: serde_json::Value = serde_json::from_str(&body).unwrap_or_default();
             let _ = app.emit(
                 "hook",
-                serde_json::json!({ "event": event, "tool": v["tool_name"], "message": v["last_assistant_message"] }),
+                serde_json::json!({ "event": event, "session": v["session_id"], "cwd": v["cwd"], "tool": v["tool_name"], "message": v["last_assistant_message"] }),
             );
             let _ = req.respond(tiny_http::Response::empty(200));
         }

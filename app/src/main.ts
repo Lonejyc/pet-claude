@@ -1,9 +1,10 @@
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { buildPet } from "./pet3d";
+import { anyBusy, color, count, ignored, label, prune, remove, touch, type Session } from "./sessions";
 import { sound } from "./sound";
 
-type Hook = { event: string; tool?: string; message?: string };
+type Hook = { event: string; session?: string | null; cwd?: string | null; tool?: string; message?: string };
 
 const pet = document.querySelector<HTMLElement>("#pet")!;
 const bubble = document.querySelector<HTMLElement>("#bubble")!;
@@ -15,14 +16,14 @@ hammer.addEventListener("animationstart", tokOnImpacts);
 hammer.addEventListener("animationiteration", tokOnImpacts);
 
 const typed = document.querySelector<HTMLElement>("#typed")!;
+const bubbleTag = document.querySelector<HTMLElement>("#bubble-tag")!;
 let stateTimer: number;
 let bubbleTimer: number;
 let typeTimer: number;
 
-// Budget de répétition : pas de bulle si le pet a parlé il y a moins de 20 s, sauf si un outil a échoué pendant le tour.
-const COOLDOWN_MS = 20_000;
+// Budget de répétition : pas de bulle si le pet a parlé il y a moins de 12 s, sauf si un outil a échoué pendant le tour.
+const COOLDOWN_MS = 12_000;
 let lastSpokeAt = 0;
-let failedThisTurn = false;
 
 // Outil en cours -> accessoire du pet (cf. [data-tool] dans styles.css)
 const TOOL_KINDS: Record<string, string> = {
@@ -34,7 +35,6 @@ const TOOL_KINDS: Record<string, string> = {
 
 // Confettis seulement après un tour chargé (>= 3 outils) et sans échec : sinon ils perdent leur sens.
 const CONFETTI_MIN_TOOLS = 3;
-let toolsThisTurn = 0;
 
 function confetti() {
   for (let i = 0; i < 24; i++) {
@@ -70,8 +70,12 @@ const firstSentence = (text: string) => {
 };
 
 // Texte tapé lettre par lettre ; le pet "parle" (petits sauts) tant qu'il tape.
-function say(text: string) {
+function say(text: string, session: Session) {
   const full = firstSentence(text);
+  // pastille du projet seulement s'il y a plusieurs sessions : sinon c'est du bruit
+  bubbleTag.hidden = count() < 2;
+  bubbleTag.textContent = label(session);
+  bubble.style.setProperty("--tag", color(session));
   let i = 0;
   lastSpokeAt = Date.now();
   clearInterval(typeTimer);
@@ -84,15 +88,27 @@ function say(text: string) {
     if (i % 2 && full[i - 1] !== " ") sound.blip();
     if (i < full.length) return;
     clearInterval(typeTimer);
-    setState("idle");
+    settle();
     bubbleTimer = setTimeout(() => (bubble.hidden = true), 8000);
   }, 35);
 }
 
+// Le pet reste "au travail" tant qu'une autre session a un outil en cours.
+const settle = () => setState(anyBusy() ? "working" : "idle");
+
 listen<Hook>("hook", ({ payload }) => {
+  const id = payload.session ?? "default";
+  if (ignored.has(id)) return;
+  if (payload.event === "SessionEnd") {
+    remove(id);
+    if (pet.dataset.state === "working") settle();
+    return;
+  }
+  const session = touch(id, payload.cwd);
   if (payload.event === "PreToolUse") {
+    session.busy = true;
+    session.tools++;
     setState("working");
-    toolsThisTurn++;
     const kind = payload.tool && TOOL_KINDS[payload.tool];
     if (kind) pet.dataset.tool = kind;
     if (kind === "bash") {
@@ -102,18 +118,20 @@ listen<Hook>("hook", ({ payload }) => {
   }
   // Claude continue en général après un échec : retour au travail, c'est Stop qui calmera le pet.
   if (payload.event === "PostToolUseFailure") {
-    failedThisTurn = true;
+    session.failed = true;
     setState("worried", 2500, "working");
     sound.worried();
   }
   if (payload.event === "Stop") {
-    if (payload.message && (failedThisTurn || Date.now() - lastSpokeAt > COOLDOWN_MS)) say(payload.message);
-    else setState("idle");
-    if (toolsThisTurn >= CONFETTI_MIN_TOOLS && !failedThisTurn) confetti();
-    failedThisTurn = false;
-    toolsThisTurn = 0;
+    session.busy = false;
+    if (payload.message && (session.failed || Date.now() - lastSpokeAt > COOLDOWN_MS)) say(payload.message, session);
+    else settle();
+    if (session.tools >= CONFETTI_MIN_TOOLS && !session.failed) confetti();
+    session.failed = false;
+    session.tools = 0;
   }
 });
+
 
 // Appui = le pet s'écrase comme une balle, relâchement = il rebondit.
 // Si on bouge de plus de 4 px, on déplace la fenêtre à la main (le drag natif bloque les événements jusqu'au relâchement).
@@ -342,6 +360,7 @@ function wake() {
 }
 
 setInterval(() => {
+  prune(6 * 3600_000);
   if (pet.dataset.state === "idle" && Date.now() - lastActivity > SLEEP_AFTER_MS) setState("sleeping");
 }, 5000);
 

@@ -7,6 +7,10 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
   text-align: center; transform-origin: 50% 100%; animation: pop 0.2s ease-out;
 }
 #bubble-text { display: block; }
+/* pastille du projet, posée sur le bord haut de la bulle quand plusieurs sessions sont ouvertes */
+#bubble-tag { position: absolute; top: -11px; left: 12px; max-width: 200px; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border: 2px solid #222; border-radius: 10px; background: var(--tag); color: #fff; font: 700 10px/15px system-ui, sans-serif; }
+#bubble-tag[hidden] { display: none; }
 /* queue de la bulle : un triangle noir (contour) et un blanc (remplissage) */
 #bubble::before, #bubble::after {
   content: ""; position: absolute; left: 50%; border: solid transparent; transform: translateX(-50%);
