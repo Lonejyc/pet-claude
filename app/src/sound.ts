@@ -1,5 +1,16 @@
 // Sons synthétisés (WebAudio, aucun fichier). Le contexte démarre suspendu tant que l'utilisateur n'a pas cliqué dans la fenêtre.
-const ctx = new AudioContext();
+let ctx = new AudioContext();
+
+// Après une veille du Mac, WebKit laisse le contexte muet (état "interrupted", ou "running" sans sortie) : on en recrée un.
+// La veille se repère à un trou dans les ticks, les timers ne tournant pas pendant qu'elle dure.
+let lastTick = Date.now();
+setInterval(() => {
+  if (Date.now() - lastTick > 30_000) {
+    ctx.close();
+    ctx = new AudioContext();
+  }
+  lastTick = Date.now();
+}, 5_000);
 
 let enabled = true;
 let volume = 1;
@@ -10,7 +21,7 @@ export const setSoundConfig = (cfg: { enabled: boolean; volume: number }) => {
 
 function tone(from: number, to: number, ms: number, type: OscillatorType = "square", vol = 0.04, delayMs = 0) {
   if (!enabled || volume === 0) return;
-  if (ctx.state === "suspended") ctx.resume();
+  if (ctx.state !== "running") ctx.resume();
   const t = ctx.currentTime + delayMs / 1000;
   const end = t + ms / 1000;
   const osc = ctx.createOscillator();

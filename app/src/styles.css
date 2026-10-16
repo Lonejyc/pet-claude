@@ -38,7 +38,7 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
 /* vue de 3/4 : on voit le dessus ; le curseur fait tourner le pet vers lui */
 .rig { position: relative; width: 100%; height: 100%; transition: transform 0.12s ease-out; transform: rotateX(calc(-10deg + var(--rx) * 1deg)) rotateY(calc(var(--ry) * 1deg)); }
 .cube { position: absolute; }
-.face { position: absolute; backface-visibility: hidden; }
+.face { position: absolute; } /* faces visibles de dos : sur une arête, l'anticrénelage laisse voir l'intérieur orange du pavé, et non le bureau (liserés) */
 .eyes-open, .eyes-squint { transform: translate(calc(var(--lx) * 1px), calc(var(--ly) * 1px)); transition: transform 0.1s ease-out; }
 #pet[data-state="working"] { animation: wiggle 2s ease-in-out infinite; }
 #pet[data-state="talking"] { animation: talk 0.25s ease-in-out infinite; }
