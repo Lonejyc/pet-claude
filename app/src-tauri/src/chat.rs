@@ -10,6 +10,11 @@ const PERSONA: &str = "Tu es le petit pet de l'utilisateur, une créature-bloc o
 Réponds en français, en 2 phrases courtes maximum (140 caractères au total), sans markdown ni liste, \
 sur un ton malicieux mais utile. Tu peux lire le code du projet pour répondre, mais tu ne modifies rien.";
 
+/// Sans session ouverte, le pet n'a aucun dossier à lire : il répond aux questions générales et renvoie vers un terminal pour le reste.
+const NO_SESSION: &str = "Ici, aucune session Claude Code n'est ouverte et tu n'as accès à aucun fichier. \
+Si la question porte sur des fichiers, du code ou un dossier précis, réponds poliment qu'il faut d'abord ouvrir Claude Code \
+dans un terminal, dans ce dossier. Sinon, réponds normalement.";
+
 /// Une app lancée depuis le Finder n'a pas le PATH du terminal : on demande son chemin au shell de connexion (une seule fois).
 fn claude_path() -> &'static str {
     static PATH: OnceLock<String> = OnceLock::new();
@@ -46,10 +51,14 @@ pub fn ask(app: tauri::AppHandle, id: String, question: String, resume: Option<S
         };
         // une question qui commencerait par "-" serait prise pour une option
         let question = if question.starts_with('-') { format!("Question : {question}") } else { question };
+        let (tools, persona) = match &resume {
+            Some(_) => ("Read,Grep,Glob", PERSONA.to_string()),
+            None => ("", format!("{PERSONA} {NO_SESSION}")), // "" : aucun outil
+        };
         let mut cmd = Command::new(claude_path());
         // la question doit venir juste après -p : --tools accepte plusieurs valeurs et avalerait un argument positionnel placé après
         cmd.args(["-p", &question, "--output-format", "stream-json", "--verbose", "--include-partial-messages"])
-            .args(["--tools", "Read,Grep,Glob", "--append-system-prompt", PERSONA, "--session-id", &fork]);
+            .args(["--tools", tools, "--append-system-prompt", &persona, "--session-id", &fork]);
         if let Some(session) = &resume {
             cmd.args(["--resume", session, "--fork-session"]);
         }

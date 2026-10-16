@@ -28,6 +28,7 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
 #chat-chips span { padding: 0 8px; border: 2px solid #222; border-radius: 10px; background: var(--tag); color: #fff; cursor: pointer;
   font: 700 10px/15px system-ui, sans-serif; opacity: 0.55; }
 #chat-chips span.selected { opacity: 1; box-shadow: 2px 2px 0 #222; }
+#chat-chips span.none { max-width: 230px; background: #fff; color: #222; opacity: 1; cursor: default; text-align: center; }
 #pet {
   --rx: 0; --ry: 0; --lx: 0; --ly: 0; --k: 1; /* regard et orientation, pilotés par la position du curseur */
   position: relative; width: 150px; height: 112px; perspective: 600px; user-select: none; cursor: grab; animation: bounce 1.6s ease-in-out infinite;

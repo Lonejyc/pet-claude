@@ -416,6 +416,8 @@ function renderChips() {
       return chip;
     }),
   );
+  // les sessions déjà ouvertes n'apparaissent qu'à leur prochain hook ; sans session, le chat ne lit aucun fichier (cf. chat.rs)
+  if (!count()) chips.innerHTML = `<span class="none">Aucune session vue : question générale, ou ouvre Claude Code dans ton dossier.</span>`;
 }
 
 async function openChat() {

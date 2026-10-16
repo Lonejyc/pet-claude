@@ -16,6 +16,8 @@ s'inquiète quand une commande échoue, et te répond dans une bulle.</p>
 - **Reconnaît tes sessions** : une pastille (nom du projet + couleur) étiquette chaque bulle quand plusieurs sessions sont ouvertes.
 - **Mini-chat** : double-clic sur le pet, tape une question. Elle part dans une *copie* de la session choisie
   (`claude -p --resume --fork-session`, lecture seule) : ta session du terminal n'est pas modifiée. `Tab` change de session.
+  Sans session ouverte, il répond aux questions générales mais ne lit aucun fichier : pour une question sur un dossier,
+  il te demande d'ouvrir Claude Code dans un terminal, dans ce dossier.
 - **Vit** : il cligne des yeux, s'endort, se laisse prendre (il panique), se lance et rebondit sur les bords de l'écran.
 - Visible **au-dessus des apps en plein écran**, sur tous les espaces, multi-écrans.
 
@@ -84,6 +86,7 @@ Aucune donnée ne quitte ta machine. Chaque question du mini-chat est un appel n
 - Ce secret n'empêche pas un programme qui tourne déjà sous ton compte de lire `~/.claude/settings.json` et de le copier : c'est
   le même niveau de confiance que tes autres réglages.
 - Le mini-chat ne dispose que de `Read`, `Grep` et `Glob` : il peut lire ton code, mais ne modifie rien et ne lance aucune commande.
+  Sans session ouverte, il n'a aucun outil.
 - Les modifications de `~/.claude/settings.json` sont atomiques (fichier temporaire puis renommage), conservent les permissions,
   sont précédées d'une sauvegarde, et sont **refusées sans rien écrire** si ce fichier n'est pas du JSON valide.
 - Mise à jour depuis les betas 1 et 2 : l'app migre toute seule l'ancien identifiant (`fr.perso.petclaude`) et met à jour
@@ -97,6 +100,9 @@ Aucune donnée ne quitte ta machine. Chaque question du mini-chat est un appel n
 - L'installateur n'a pas pu être exécuté en conditions réelles avant publication (scripts de post-installation en root) :
   en cas de souci, voir `/tmp/pet-claude-install.log`.
 - Le mini-chat retrouve `claude` via ton shell de connexion ; non vérifié depuis tous les types d'installation de Claude Code.
+- Le pet ne connaît que les sessions qui lui ont envoyé un hook depuis son lancement. Après un (re)lancement du pet, une session
+  déjà ouverte n'apparaît qu'à sa prochaine activité (outil utilisé ou fin de réponse) : d'ici là, le mini-chat ne peut pas la
+  viser et répond comme si aucune session n'était ouverte.
 - Un seul pet à la fois : si deux instances tournent (par ex. version de développement + installée), seule la première reçoit les hooks.
 - Les accessoires du pet (clavier, marteau, enclume, jumelles) sont positionnés « à l'œil » et peuvent légèrement traverser le corps.
 
