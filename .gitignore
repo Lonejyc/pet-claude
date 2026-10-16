@@ -1,2 +1,3 @@
 installer/build/
 installer/*.pkg
+.idea/
