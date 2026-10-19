@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Usage de Claude</title>
+    <style>
+      :root { color-scheme: light dark; --card: #fff; --text: #241c15; --muted: #7a6f65; --line: #e6dfd6; --accent: #e8793c; }
+      @media (prefers-color-scheme: dark) { :root { --card: #272019; --text: #f3ece4; --muted: #a39789; --line: #3a3128; } }
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 6px; background: transparent; color: var(--text); font: 12px/1.35 -apple-system, system-ui, sans-serif; -webkit-user-select: none; user-select: none; }
+      main { padding: 2px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; }
+      section { padding: 8px 0; }
+      section + section { border-top: 1px solid var(--line); }
+      section:last-of-type { border-bottom: 1px solid var(--line); }
+      .head { display: flex; justify-content: space-between; align-items: baseline; font-weight: 600; }
+      .pct { color: var(--accent); font-size: 15px; }
+      .pct.high { color: #d6453a; }
+      .bar { position: relative; height: 4px; margin: 5px 0; border-radius: 2px; background: var(--line); }
+      .bar i { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
+      .bar i.high { background: #d6453a; }
+      .bar u { position: absolute; top: -2px; width: 2px; height: 8px; background: var(--text); opacity: 0.5; }
+      .reset { margin: 0; color: var(--muted); font-size: 10px; }
+      .row { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; }
+      .row span:last-child { color: var(--muted); white-space: nowrap; }
+      .row span:first-child { overflow: hidden; text-overflow: ellipsis; }
+      details { margin-top: 4px; font-size: 11px; }
+      summary { color: var(--muted); cursor: pointer; }
+      details .row { margin-top: 3px; }
+      .reset { margin-top: 4px; }
+      footer { display: flex; flex-direction: column; margin: 0 -8px; padding: 3px 4px; }
+      button { padding: 2px 4px; border: 0; border-radius: 6px; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+      button:hover { background: var(--line); }
+      button.danger { color: #d6453a; }
+    </style>
+    <script type="module" src="/src/usage.ts" defer></script>
+  </head>
+  <body>
+    <main>
+      <footer>
+        <button id="toggle" type="button"></button>
+        <button id="settings" type="button">Réglages…</button>
+        <button id="quit" type="button" class="danger">Quitter pet-claude</button>
+      </footer>
+    </main>
+  </body>
+</html>

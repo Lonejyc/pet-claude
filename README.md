@@ -66,11 +66,13 @@ Prérequis : macOS sur Apple Silicon, [Claude Code](https://claude.com/claude-co
 | Clic | il s'écrase comme une balle |
 | Glisser / lâcher en mouvement | le déplacer / le lancer |
 | Double-clic | poser une question (Entrée envoie, Échap ferme, Tab change de session) |
-| Icône du pet dans la barre de menus | **Masquer le pet**, **Réglages…** et **Quitter** |
+| Icône du pet dans la barre de menus | une carte d'usage (limites du forfait, coût estimé, sessions) avec **Masquer le pet**, **Réglages…** et **Quitter** ; un second clic la ferme |
 | `/settings` ou `/quit` dans le champ | idem, au clavier (l'icône Dock n'apparaît que pendant les réglages) |
 
 ## Ce qui est modifié sur ta machine
 - `/Applications/pet-claude.app`
+- Lecture seule : l'item « Claude Code-credentials » du Keychain (via `/usr/bin/security`, token envoyé uniquement à `api.anthropic.com`
+  pour les limites du forfait), `~/.claude.json` (cache d'usage) et les transcripts `~/.claude/projects/**/*.jsonl` (coût estimé).
 - `~/.claude/settings.json` : cinq hooks (`curl` vers `localhost:4242`) **ajoutés à côté des tiens**, sauvegarde dans
   `settings.json.bak-pet-claude`. Si tu coches la personnalité : `outputStyle: "Pet"` et `~/.claude/output-styles/pet.md`.
 - `~/Library/LaunchAgents/io.github.lonejyc.pet-claude.plist` (lancement au démarrage, optionnel)
@@ -103,6 +105,9 @@ Aucune donnée ne quitte ta machine. Chaque question du mini-chat est un appel n
 - Le pet ne connaît que les sessions qui lui ont envoyé un hook depuis son lancement. Après un (re)lancement du pet, une session
   déjà ouverte n'apparaît qu'à sa prochaine activité (outil utilisé ou fin de réponse) : d'ici là, le mini-chat ne peut pas la
   viser et répond comme si aucune session n'était ouverte.
+- Les limites du forfait viennent d'un endpoint Anthropic **non documenté** (celui de Claude Code) : il peut changer ou refuser
+  les requêtes ; la carte se replie alors sur le cache `~/.claude.json` et signale qu'il est périmé. Le coût affiché est une
+  estimation (grille de tarifs copiée à la main, modèles inconnus comptés sans coût), pas ta facture.
 - Un seul pet à la fois : si deux instances tournent (par ex. version de développement + installée), seule la première reçoit les hooks.
 - Les accessoires du pet (clavier, marteau, enclume, jumelles) sont positionnés « à l'œil » et peuvent légèrement traverser le corps.
 

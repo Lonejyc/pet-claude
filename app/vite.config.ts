@@ -10,7 +10,7 @@ export default defineConfig(() => ({
   //
   // 1. prevent Vite from obscuring rust errors
   // page des réglages en plus de la page du pet
-  build: { rollupOptions: { input: { main: "index.html", settings: "settings.html" } } },
+  build: { rollupOptions: { input: { main: "index.html", settings: "settings.html", usage: "usage.html" } } },
   clearScreen: false,
   // 2. tauri expects a fixed port, fail if that port is not available
   server: {

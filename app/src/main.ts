@@ -1,4 +1,4 @@
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { buildPet } from "./pet3d";
 import { all, anyBusy, color, count, ignored, label, mostRecent, prune, remove, touch, type Session } from "./sessions";
@@ -369,10 +369,26 @@ function wake() {
   if (pet.dataset.state === "sleeping") setState("idle");
 }
 
+// La fenêtre d'usage (autre webview) affiche le nombre de sessions : on le lui envoie quand il change.
+let sentSessions = -1;
 setInterval(() => {
   prune(6 * 3600_000);
+  if (count() !== sentSessions) emit("sessions", (sentSessions = count()));
   if (pet.dataset.state === "idle" && Date.now() - lastActivity > SLEEP_AFTER_MS) setState("sleeping");
 }, 5000);
+
+// Le pet prévient quand la session de 5 h passe 80 % puis 90 % (vérifié toutes les 15 min ; pas au lancement).
+let usageLevel: number | null = null;
+async function checkUsage() {
+  const plan = await invoke<{ usage: { five_hour?: { utilization: number } | null } } | null>("plan_usage");
+  const pct = plan?.usage.five_hour?.utilization;
+  if (pct === undefined) return;
+  const level = pct >= 90 ? 90 : pct >= 80 ? 80 : 0;
+  if (usageLevel !== null && level > usageLevel) say(`Déjà ${Math.round(pct)} % de ta session de 5 h consommée.`);
+  usageLevel = level;
+}
+checkUsage();
+setInterval(checkUsage, 15 * 60_000);
 
 function blinkLater() {
   setTimeout(() => {

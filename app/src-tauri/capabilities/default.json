@@ -4,10 +4,12 @@
   "description": "Capability for the main window",
   "windows": [
     "main",
-    "settings"
+    "settings",
+    "usage"
   ],
   "permissions": [
     "core:default",
-    "core:window:allow-set-position"
+    "core:window:allow-set-position",
+    "core:window:allow-set-size"
   ]
 }
