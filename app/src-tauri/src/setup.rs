@@ -220,7 +220,7 @@ fn settings_path(home: &Path) -> PathBuf {
 }
 
 fn default_settings() -> Value {
-    json!({ "cooldownSec": 12, "sleepAfterSec": 60, "confetti": true, "sound": true, "volume": 1.0 })
+    json!({ "cooldownSec": 12, "sleepAfterSec": 60, "confetti": true, "sound": true, "volume": 1.0, "skinColor": "orange", "skinAccessory": "none" })
 }
 
 pub fn read_settings() -> Value {

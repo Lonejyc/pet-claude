@@ -77,7 +77,9 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
 @keyframes bounce { 0%, 100% { transform: none; } 30% { transform: scale(calc(1 + 0.15 * var(--k)), calc(1 - 0.22 * var(--k))); } }
 
 /* Accessoires par outil : Read = lunettes + regard qui balaie, Bash = clavier + bras qui tapent, Edit = marteau, Web = jumelles */
-.glasses, .binoculars, .keyboard, .hammer, .anvil, .flash { display: none; }
+.glasses, .binoculars, .keyboard, .hammer, .anvil, .flash, .acc { display: none; }
+.acc { position: absolute; inset: 0; transform-style: preserve-3d; }
+#pet[data-accessory="ears"] .acc-ears, #pet[data-accessory="antenna"] .acc-antenna, #pet[data-accessory="hat"] .acc-hat { display: block; }
 .keyboard { position: absolute; left: 30px; top: 100px; width: 90px; height: 5px; translate: 0 0 38px; transform-style: preserve-3d; }
 .anvil { position: absolute; left: 131px; top: 80px; width: 22px; height: 22.5px; translate: 0 0 30px; transform-style: preserve-3d; }
 .hammer { position: absolute; left: 136px; top: 25px; width: 5px; height: 40px; transform-style: preserve-3d; transform-origin: 50% 100%; }

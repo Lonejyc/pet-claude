@@ -1,8 +1,8 @@
 // Le pet en vrai volume : des pavés CSS 3D (6 faces chacun). Unités = px, origine en haut à gauche d'un cadre 150 x 112.
-type Shades = typeof ORANGE;
+import { SKIN, type Shades } from "./skins";
 type Cube = { x: number; y: number; w: number; h: number; d: number; z?: number; cls?: string; shades?: Shades };
 
-const ORANGE = { front: "#e8793c", top: "#f2985f", right: "#c9622a", left: "#d46d31", back: "#b85a26", bottom: "#9a4a1f" };
+const DARK = { front: "#2b2b33", top: "#44444f", right: "#1d1d22", left: "#24242a", back: "#18181c", bottom: "#101013" };
 const GREY = { front: "#6b6f7a", top: "#c9ccd6", right: "#4b4e57", left: "#5a5d67", back: "#3f424a", bottom: "#2e3036" };
 const KEY = { front: "#d8dbe3", top: "#f2f3f7", right: "#a9adb8", left: "#b7bbc6", back: "#9a9ea9", bottom: "#7d818c" };
 const STEEL = { front: "#4a4d57", top: "#8c909c", right: "#34363d", left: "#3d4048", back: "#2b2d33", bottom: "#1f2024" };
@@ -34,7 +34,7 @@ function face(parent: HTMLElement, w: number, h: number, left: number, top: numb
   return el;
 }
 
-function cube(parent: HTMLElement, { x, y, w, h, d, z = 0, cls = "", shades = ORANGE }: Cube) {
+function cube(parent: HTMLElement, { x, y, w, h, d, z = 0, cls = "", shades = SKIN }: Cube) {
   const el = document.createElement("div");
   el.className = `cube ${cls}`;
   // `translate` (et non transform) pour laisser transform libre aux animations CSS (balancement des jambes)
@@ -84,4 +84,21 @@ export function buildPet(rig: HTMLElement) {
   const flash = document.createElement("div");
   flash.className = "flash";
   rig.append(flash);
+  // accessoires décoratifs du skin : un seul affiché, selon #pet[data-accessory] (cf. styles.css)
+  const accessory = (cls: string, cubes: Cube[]) => {
+    const box = document.createElement("div");
+    box.className = `acc ${cls}`;
+    cubes.forEach((c) => cube(box, c));
+    rig.append(box);
+  };
+  accessory("acc-ears", [36, 100].map((x) => ({ x, y: 1, w: 14, h: 14, d: 12 })));
+  accessory("acc-antenna", [
+    { x: 73, y: 1, w: 4, h: 14, d: 4, shades: GREY },
+    { x: 71, y: -7, w: 8, h: 8, d: 8 },
+  ]);
+  accessory("acc-hat", [
+    { x: 50, y: 11, w: 50, h: 4, d: 34, shades: DARK },
+    { x: 59, y: -11, w: 32, h: 22, d: 22, shades: DARK },
+    { x: 58.5, y: 2, w: 33, h: 4, d: 23 },
+  ]);
 }

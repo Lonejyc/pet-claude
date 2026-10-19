@@ -2,6 +2,7 @@ import { emit, listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { buildPet } from "./pet3d";
 import { all, anyBusy, color, count, ignored, label, mostRecent, prune, remove, touch, type Session } from "./sessions";
+import { setSkin } from "./skins";
 import { setSoundConfig, sound } from "./sound";
 
 type Hook = { event: string; session?: string | null; cwd?: string | null; tool?: string; message?: string };
@@ -9,6 +10,7 @@ type Hook = { event: string; session?: string | null; cwd?: string | null; tool?
 const pet = document.querySelector<HTMLElement>("#pet")!;
 const bubble = document.querySelector<HTMLElement>("#bubble")!;
 buildPet(document.querySelector<HTMLElement>("#rig")!);
+setSkin(pet, "orange", "none"); // avant l'arrivée des réglages
 // Un "tok" à chaque coup de marteau (impacts à 5 %, 21 % et 38 % du cycle de 2 s défini dans styles.css).
 const hammer = document.querySelector<HTMLElement>(".hammer")!;
 const tokOnImpacts = () => [100, 420, 760].forEach((ms) => setTimeout(sound.tok, ms));
@@ -532,12 +534,13 @@ chips.addEventListener("mousedown", (e) => e.preventDefault());
 chatInput.addEventListener("blur", () => setTimeout(closeChat, 150));
 
 // Réglages (fenêtre de réglages) : lus au démarrage, puis appliqués en direct à chaque changement.
-type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; volume: number };
+type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; volume: number; skinColor: string; skinAccessory: string };
 function applySettings(s: Settings) {
   COOLDOWN_MS = s.cooldownSec * 1000;
   SLEEP_AFTER_MS = s.sleepAfterSec * 1000;
   CONFETTI = s.confetti;
   setSoundConfig({ enabled: s.sound, volume: s.volume });
+  setSkin(pet, s.skinColor, s.skinAccessory);
 }
 invoke<Settings>("get_settings").then(applySettings);
 listen<Settings>("settings", ({ payload }) => applySettings(payload));
@@ -552,7 +555,7 @@ function pushRegions() {
     const r = el.getBoundingClientRect();
     regions.push([r.left - padX, r.top - padTop, r.width + 2 * padX, r.height + padTop + padBottom].map(Math.round));
   };
-  add(pet, 24, 10, 6); // marge : accessoires (marteau, enclume, clavier) un peu en dehors du cadre du pet
+  add(pet, 24, 24, 6); // marge : accessoires (marteau, enclume, clavier, chapeau du skin) un peu en dehors du cadre du pet
   add(bubble, 6, 14, 6); // 14 en haut : la pastille de projet dépasse du bord
   add(chat, 6, 6, 6);
   const key = JSON.stringify(regions);

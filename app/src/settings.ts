@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
+import { ACCESSORIES, COLORS } from "./skins";
 
-type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; volume: number };
+type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; volume: number; skinColor: string; skinAccessory: string };
 type Status = { hooks: boolean; style: boolean; login: boolean; installed: boolean };
 
 const $ = <T extends HTMLElement>(id: string) => document.querySelector<T>(`#${id}`)!;
@@ -18,7 +19,16 @@ const fields = {
   confetti: $<HTMLInputElement>("confetti"),
   sound: $<HTMLInputElement>("sound"),
   volume: $<HTMLInputElement>("volume"),
+  skinAccessory: $<HTMLSelectElement>("skinAccessory"),
 };
+const swatches = $("skin-colors");
+for (const [name, { label, shades }] of Object.entries(COLORS)) {
+  const radio = Object.assign(document.createElement("input"), { type: "radio", name: "skinColor", value: name, title: label });
+  radio.style.setProperty("--c", shades.front);
+  swatches.append(radio);
+}
+for (const [name, label] of Object.entries(ACCESSORIES)) fields.skinAccessory.add(new Option(label, name));
+const skinColor = () => document.querySelector<HTMLInputElement>("input[name=skinColor]:checked")?.value ?? "orange";
 const fmtSeconds = (s: number) => (s >= 120 ? `${Math.round(s / 60)} min` : `${s} s`);
 
 function readForm(): Settings {
@@ -28,6 +38,8 @@ function readForm(): Settings {
     confetti: fields.confetti.checked,
     sound: fields.sound.checked,
     volume: Number(fields.volume.value),
+    skinColor: skinColor(),
+    skinAccessory: fields.skinAccessory.value,
   };
 }
 
@@ -39,7 +51,7 @@ function showOutputs() {
   fields.volume.disabled = !s.sound;
 }
 
-for (const input of Object.values(fields)) {
+for (const input of [...Object.values(fields), swatches]) {
   input.addEventListener("input", () => {
     showOutputs();
     invoke("save_settings", { settings: readForm() }).catch(fail);
@@ -84,6 +96,8 @@ $("quit").addEventListener("click", () => invoke("quit"));
   fields.confetti.checked = s.confetti;
   fields.sound.checked = s.sound;
   fields.volume.value = String(s.volume);
+  fields.skinAccessory.value = s.skinAccessory;
+  for (const r of swatches.querySelectorAll<HTMLInputElement>("input")) r.checked = r.value === s.skinColor;
   showOutputs();
   await refreshStatus();
 })();
