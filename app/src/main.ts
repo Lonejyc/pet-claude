@@ -64,8 +64,9 @@ function setState(state: string, thenAfterMs?: number, then = "idle") {
     wasSleeping = sleeping;
     invoke("set_sleeping", { sleeping });
   }
-  if (state !== "sleeping") lastActivity = Date.now();
+  if (state !== "sleeping" && state !== "emote") lastActivity = Date.now();
   delete pet.dataset.tool;
+  delete pet.dataset.emote;
   clearInterval(typingTimer);
   clearTimeout(stateTimer);
   if (thenAfterMs) stateTimer = setTimeout(() => setState(then), thenAfterMs);
@@ -376,8 +377,36 @@ let sentSessions = -1;
 setInterval(() => {
   prune(6 * 3600_000);
   if (count() !== sentSessions) emit("sessions", (sentSessions = count()));
-  if (pet.dataset.state === "idle" && Date.now() - lastActivity > SLEEP_AFTER_MS) setState("sleeping");
+  if (pet.dataset.state === "idle" && Date.now() - lastActivity > SLEEP_AFTER_MS) {
+    if (!EMOTES) setState("sleeping");
+    else if (Date.now() - lastEmoteAt > EMOTE_EVERY_MS) emote();
+  }
 }, 5000);
+
+// Emotes : au lieu de s'endormir, le pet en joue une toutes les EMOTE_EVERY_MS (réglable). `/emote [nom]` dans le chat en joue une tout de suite.
+const EMOTE_LIST = ["six-seven", "cymbals"];
+const EMOTE_MS = 4000;
+let EMOTES = false;
+let EMOTE_EVERY_MS = 30_000;
+let lastEmoteAt = 0;
+let lastEmote = "";
+function emote(name?: string) {
+  const choices = EMOTE_LIST.filter((n) => n !== lastEmote);
+  const pick = name && EMOTE_LIST.includes(name) ? name : choices[Math.floor(Math.random() * choices.length)];
+  lastEmote = pick;
+  lastEmoteAt = Date.now();
+  setState("emote");
+  pet.dataset.emote = pick;
+  if (pick === "cymbals") {
+    sound.crash();
+    typingTimer = setInterval(sound.crash, 500); // le claquement tombe sur le début de chaque cycle CSS de 0,5 s
+  }
+  stateTimer = setTimeout(() => {
+    const keep = lastActivity; // la fin d'une emote ne compte pas comme une activité : la suivante reste à l'heure
+    setState("idle");
+    lastActivity = keep;
+  }, EMOTE_MS);
+}
 
 // Le pet prévient quand la session de 5 h passe 80 % puis 90 % (vérifié toutes les 15 min ; pas au lancement).
 let usageLevel: number | null = null;
@@ -526,6 +555,7 @@ chatInput.addEventListener("keydown", (e) => {
     closeChat();
     if (question === "/quit") invoke("quit");
     else if (question === "/settings") invoke("open_settings_cmd");
+    else if (question.startsWith("/emote")) emote(question.split(/\s+/)[1]);
     else ask(question);
   }
 });
@@ -534,10 +564,12 @@ chips.addEventListener("mousedown", (e) => e.preventDefault());
 chatInput.addEventListener("blur", () => setTimeout(closeChat, 150));
 
 // Réglages (fenêtre de réglages) : lus au démarrage, puis appliqués en direct à chaque changement.
-type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; volume: number; skinColor: string; skinAccessory: string };
+type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
 function applySettings(s: Settings) {
   COOLDOWN_MS = s.cooldownSec * 1000;
   SLEEP_AFTER_MS = s.sleepAfterSec * 1000;
+  EMOTES = s.emotes;
+  EMOTE_EVERY_MS = s.emoteEverySec * 1000;
   CONFETTI = s.confetti;
   setSoundConfig({ enabled: s.sound, volume: s.volume });
   setSkin(pet, s.skinColor, s.skinAccessory);

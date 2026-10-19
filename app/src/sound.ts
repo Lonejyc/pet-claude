@@ -58,5 +58,6 @@ export const sound = {
     tone(140, 70, 90, "sine", 0.1);
   },
   key: () => tone(1500 + Math.random() * 600, 700, 18, "square", 0.04),
+  crash: () => [4200, 5900, 7600].forEach((f) => tone(f, f * 0.9, 220, "sawtooth", 0.02)), // cymbales
   thump: () => tone(130, 60, 110, "sine", 0.12),
 };

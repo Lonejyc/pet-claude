@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { ACCESSORIES, COLORS } from "./skins";
 
-type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; volume: number; skinColor: string; skinAccessory: string };
+type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
 type Status = { hooks: boolean; style: boolean; login: boolean; installed: boolean };
 
 const $ = <T extends HTMLElement>(id: string) => document.querySelector<T>(`#${id}`)!;
@@ -19,6 +19,8 @@ const fields = {
   confetti: $<HTMLInputElement>("confetti"),
   sound: $<HTMLInputElement>("sound"),
   volume: $<HTMLInputElement>("volume"),
+  emotes: $<HTMLInputElement>("emotes"),
+  emoteEverySec: $<HTMLInputElement>("emoteEverySec"),
   skinAccessory: $<HTMLSelectElement>("skinAccessory"),
 };
 const swatches = $("skin-colors");
@@ -38,6 +40,8 @@ function readForm(): Settings {
     confetti: fields.confetti.checked,
     sound: fields.sound.checked,
     volume: Number(fields.volume.value),
+    emotes: fields.emotes.checked,
+    emoteEverySec: Number(fields.emoteEverySec.value),
     skinColor: skinColor(),
     skinAccessory: fields.skinAccessory.value,
   };
@@ -49,6 +53,8 @@ function showOutputs() {
   $("sleep-out").textContent = fmtSeconds(s.sleepAfterSec);
   $("volume-out").textContent = `${Math.round(s.volume * 100)} %`;
   fields.volume.disabled = !s.sound;
+  $("emote-out").textContent = fmtSeconds(s.emoteEverySec);
+  fields.emoteEverySec.disabled = !s.emotes;
 }
 
 for (const input of [...Object.values(fields), swatches]) {
@@ -96,6 +102,8 @@ $("quit").addEventListener("click", () => invoke("quit"));
   fields.confetti.checked = s.confetti;
   fields.sound.checked = s.sound;
   fields.volume.value = String(s.volume);
+  fields.emotes.checked = s.emotes;
+  fields.emoteEverySec.value = String(s.emoteEverySec);
   fields.skinAccessory.value = s.skinAccessory;
   for (const r of swatches.querySelectorAll<HTMLInputElement>("input")) r.checked = r.value === s.skinColor;
   showOutputs();

@@ -68,6 +68,9 @@ Prérequis : macOS sur Apple Silicon, [Claude Code](https://claude.com/claude-co
 | Double-clic | poser une question (Entrée envoie, Échap ferme, Tab change de session) |
 | Icône du pet dans la barre de menus | une carte d'usage (limites du forfait, coût estimé, sessions) avec **Masquer le pet**, **Réglages…** et **Quitter** ; un second clic la ferme |
 | `/settings` ou `/quit` dans le champ | idem, au clavier (l'icône Dock n'apparaît que pendant les réglages) |
+| `/emote` (ou `/emote six-seven`, `/emote cymbals`) dans le champ | joue une emote tout de suite |
+
+Dans **Réglages** : couleur et accessoire du pet (Apparence), et un mode « emotes au lieu de dormir » (six seven, singe à cymbales).
 
 ## Ce qui est modifié sur ta machine
 - `/Applications/pet-claude.app`

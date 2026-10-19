@@ -19,10 +19,20 @@ export const COLORS: Record<string, { label: string; shades: Shades }> = {
   violet: { label: "Violet", shades: tone(265, 55, 60) },
 };
 
-export const ACCESSORIES: Record<string, string> = { none: "Aucun", ears: "Oreilles", antenna: "Antenne", hat: "Chapeau" };
+export const ACCESSORIES: Record<string, string> = {
+  none: "Aucun",
+  ears: "Oreilles",
+  antenna: "Antenne",
+  hat: "Chapeau",
+  crown: "Couronne",
+  horns: "Cornes",
+  mohawk: "Crête",
+  halo: "Auréole",
+  propeller: "Casquette à hélice",
+};
 
 export function setSkin(pet: HTMLElement, color: string, accessory: string) {
   const shades = (COLORS[color] ?? COLORS.orange).shades;
   for (const f of FACES) pet.style.setProperty(`--skin-${f}`, shades[f]);
-  pet.dataset.accessory = accessory in ACCESSORIES ? accessory : "none";
+  for (const box of pet.querySelectorAll<HTMLElement>(".acc")) box.hidden = !box.classList.contains(`acc-${accessory}`);
 }

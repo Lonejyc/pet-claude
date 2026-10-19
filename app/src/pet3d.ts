@@ -2,6 +2,9 @@
 import { SKIN, type Shades } from "./skins";
 type Cube = { x: number; y: number; w: number; h: number; d: number; z?: number; cls?: string; shades?: Shades };
 
+const GOLD = { front: "#e0b93a", top: "#f3d56a", right: "#b08d22", left: "#c29d2a", back: "#a68320", bottom: "#7d6217" };
+const BONE = { front: "#ece2cb", top: "#f8f1e0", right: "#c2b89f", left: "#d3c9b0", back: "#b0a68d", bottom: "#948b74" };
+const RED = { front: "#d6453a", top: "#e8685d", right: "#a8342b", left: "#bc3b31", back: "#942d25", bottom: "#78241e" };
 const DARK = { front: "#2b2b33", top: "#44444f", right: "#1d1d22", left: "#24242a", back: "#18181c", bottom: "#101013" };
 const GREY = { front: "#6b6f7a", top: "#c9ccd6", right: "#4b4e57", left: "#5a5d67", back: "#3f424a", bottom: "#2e3036" };
 const KEY = { front: "#d8dbe3", top: "#f2f3f7", right: "#a9adb8", left: "#b7bbc6", back: "#9a9ea9", bottom: "#7d818c" };
@@ -52,8 +55,11 @@ function cube(parent: HTMLElement, { x, y, w, h, d, z = 0, cls = "", shades = SK
 export function buildPet(rig: HTMLElement) {
   const body = cube(rig, { x: 27.5, y: 15, w: 95, h: 67.5, d: 45 });
   body.firstElementChild!.innerHTML = FACE; // 1re face créée = face avant
-  cube(rig, { x: 10, y: 42.5, w: 17.5, h: 17.5, d: 17.5, cls: "arm arm-l" });
-  cube(rig, { x: 122.5, y: 42.5, w: 17.5, h: 17.5, d: 17.5, cls: "arm arm-r" });
+  const armL = cube(rig, { x: 10, y: 42.5, w: 17.5, h: 17.5, d: 17.5, cls: "arm arm-l" });
+  const armR = cube(rig, { x: 122.5, y: 42.5, w: 17.5, h: 17.5, d: 17.5, cls: "arm arm-r" });
+  // cymbales de l'emote du singe : une plaque dorée sur la face intérieure de chaque main, cachée hors de l'emote
+  cube(armL, { x: 17.5, y: -1.25, w: 3, h: 20, d: 20, cls: "cymbal", shades: GOLD });
+  cube(armR, { x: -3, y: -1.25, w: 3, h: 20, d: 20, cls: "cymbal", shades: GOLD });
   for (const x of [37.5, 55, 85, 102.5]) {
     for (const z of [12, -12]) cube(rig, { x, y: 82.5, w: 10, h: 20, d: 10, z, cls: "leg" });
   }
@@ -84,7 +90,7 @@ export function buildPet(rig: HTMLElement) {
   const flash = document.createElement("div");
   flash.className = "flash";
   rig.append(flash);
-  // accessoires décoratifs du skin : un seul affiché, selon #pet[data-accessory] (cf. styles.css)
+  // accessoires décoratifs du skin : un seul non caché, choisi par setSkin (skins.ts)
   const accessory = (cls: string, cubes: Cube[]) => {
     const box = document.createElement("div");
     box.className = `acc ${cls}`;
@@ -100,5 +106,27 @@ export function buildPet(rig: HTMLElement) {
     { x: 50, y: 11, w: 50, h: 4, d: 34, shades: DARK },
     { x: 59, y: -11, w: 32, h: 22, d: 22, shades: DARK },
     { x: 58.5, y: 2, w: 33, h: 4, d: 23 },
+  ]);
+  accessory("acc-crown", [
+    { x: 55, y: 9, w: 40, h: 6, d: 28, shades: GOLD },
+    ...[55, 71.5, 88].map((x) => ({ x, y: 1, w: 7, h: 8, d: 7, shades: GOLD })),
+  ]);
+  accessory("acc-horns", [
+    { x: 42, y: 7, w: 10, h: 8, d: 10, shades: BONE },
+    { x: 40, y: -1, w: 6, h: 8, d: 6, shades: BONE },
+    { x: 98, y: 7, w: 10, h: 8, d: 10, shades: BONE },
+    { x: 104, y: -1, w: 6, h: 8, d: 6, shades: BONE },
+  ]);
+  accessory("acc-mohawk", [8, 12, 14, 12, 8].map((h, i) => ({ x: 72, y: 15 - h, w: 6, h, d: 8, z: (i - 2) * 8 })));
+  accessory("acc-halo", [
+    { x: 57, y: -7, w: 36, h: 2.5, d: 4, z: 14, shades: GOLD },
+    { x: 57, y: -7, w: 36, h: 2.5, d: 4, z: -14, shades: GOLD },
+    { x: 55, y: -7, w: 4, h: 2.5, d: 28, shades: GOLD },
+    { x: 91, y: -7, w: 4, h: 2.5, d: 28, shades: GOLD },
+  ]);
+  accessory("acc-propeller", [
+    { x: 53, y: 7, w: 44, h: 8, d: 32, shades: RED },
+    { x: 73.5, y: 1, w: 3, h: 6, d: 3, shades: GREY },
+    { x: 58, y: -1, w: 34, h: 2, d: 5, cls: "prop", shades: GOLD },
   ]);
 }

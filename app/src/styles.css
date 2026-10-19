@@ -77,9 +77,10 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
 @keyframes bounce { 0%, 100% { transform: none; } 30% { transform: scale(calc(1 + 0.15 * var(--k)), calc(1 - 0.22 * var(--k))); } }
 
 /* Accessoires par outil : Read = lunettes + regard qui balaie, Bash = clavier + bras qui tapent, Edit = marteau, Web = jumelles */
-.glasses, .binoculars, .keyboard, .hammer, .anvil, .flash, .acc { display: none; }
-.acc { position: absolute; inset: 0; transform-style: preserve-3d; }
-#pet[data-accessory="ears"] .acc-ears, #pet[data-accessory="antenna"] .acc-antenna, #pet[data-accessory="hat"] .acc-hat { display: block; }
+.glasses, .binoculars, .keyboard, .hammer, .anvil, .flash, .cymbal { display: none; }
+.acc { position: absolute; inset: 0; transform-style: preserve-3d; } /* un seul accessoire non caché : cf. setSkin */
+.prop { animation: spin 0.4s linear infinite; }
+@keyframes spin { to { transform: rotateY(360deg); } }
 .keyboard { position: absolute; left: 30px; top: 100px; width: 90px; height: 5px; translate: 0 0 38px; transform-style: preserve-3d; }
 .anvil { position: absolute; left: 131px; top: 80px; width: 22px; height: 22.5px; translate: 0 0 30px; transform-style: preserve-3d; }
 .hammer { position: absolute; left: 136px; top: 25px; width: 5px; height: 40px; transform-style: preserve-3d; transform-origin: 50% 100%; }
@@ -89,8 +90,8 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
 #pet[data-tool="web"] .binoculars { display: inline; }
 #pet[data-tool="bash"] .keyboard { display: block; }
 /* les bras passent devant lui, au-dessus du clavier, et tapent en alternance (cycle 0,28 s, le bras droit décalé d'une demi-période) */
-.arm-l { --ax: 29px; }
-.arm-r { --ax: -29px; }
+.arm-l { --ax: 29px; --cx: 44px; }
+.arm-r { --ax: -29px; --cx: -44px; } /* --cx : bras tendus l'un vers l'autre (cymbales) */
 #pet[data-tool="bash"] .arm { animation: tap 0.28s ease-in-out infinite; }
 #pet[data-tool="bash"] .arm-r { animation-delay: -0.14s; }
 #pet[data-tool="bash"] .k-a { animation: press-a 0.56s infinite; }
@@ -98,6 +99,25 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
 #pet[data-tool="bash"] .k-c { animation: press-c 0.56s infinite; }
 #pet[data-tool="bash"] .k-d { animation: press-d 0.56s infinite; }
 #pet[data-tool="edit"] .hammer { display: block; animation: hit 2s ease-in infinite; }
+/* Emotes (jouées à la place du sommeil, cf. réglages). Six seven : les mains devant lui montent et descendent en décalé, le corps se balance. */
+#pet[data-emote="six-seven"] { animation: sway 1.6s ease-in-out infinite; }
+#pet[data-emote="six-seven"] .arm { animation: six-seven 0.8s ease-in-out infinite; }
+#pet[data-emote="six-seven"] .arm-r { animation-delay: -0.4s; }
+@keyframes six-seven {
+  0%, 100% { transform: translate3d(var(--ax), -6px, 38px); }
+  50% { transform: translate3d(var(--ax), 16px, 38px); }
+}
+@keyframes sway { 25% { transform: rotate(-3deg); } 75% { transform: rotate(3deg); } }
+/* Singe à cymbales : les mains se rejoignent toutes les 0,5 s (le claquement est à 0 %, le son part au même instant), grand sourire. */
+#pet[data-emote="cymbals"] { animation: cymbal-bob 0.5s ease-in-out infinite; }
+#pet[data-emote="cymbals"] .arm { animation: clap 0.5s ease-in-out infinite; }
+#pet[data-emote="cymbals"] .cymbal { display: block; }
+#pet[data-emote="cymbals"] .mouth { display: inline; transform-box: fill-box; transform-origin: center; transform: scaleY(1.8); }
+@keyframes clap {
+  0%, 100% { transform: translate3d(var(--cx), 6px, 38px); }
+  50% { transform: translate3d(calc(var(--cx) * 0.2), 6px, 38px); }
+}
+@keyframes cymbal-bob { 0%, 100% { transform: translateY(3px); } 50% { transform: translateY(-5px); } }
 @keyframes scan { from { transform: translateX(-4px); } to { transform: translateX(4px); } }
 @keyframes tap {
   0%, 100% { transform: translate3d(var(--ax), 30px, 38px); }
