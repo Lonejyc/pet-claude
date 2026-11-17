@@ -931,7 +931,7 @@ chips.addEventListener("mousedown", (e) => e.preventDefault());
 chatInput.addEventListener("blur", () => setTimeout(closeChat, 150));
 
 // Réglages (fenêtre de réglages) : lus au démarrage, puis appliqués en direct à chaque changement.
-type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; soundMode: "all" | "alerts"; chatShortcut: string; stealth: boolean; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
+type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; soundMode: "all" | "alerts"; chatShortcut: string; stealth: boolean; petScale: number; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
 // Mode furtif : pendant un appel (micro utilisé, cf. mic.rs) le pet rétrécit, se tait et ne fait plus de bulles ni de confettis.
 // Les demandes de permission restent visibles : elles bloquent Claude.
 let STEALTH = true;
@@ -954,6 +954,10 @@ function applySettings(s: Settings) {
   EMOTE_EVERY_MS = s.emoteEverySec * 1000;
   CONFETTI = s.confetti;
   STEALTH = s.stealth;
+  const k = Math.min(1.5, Math.max(0.7, s.petScale ?? 1));
+  document.body.style.setProperty("--size", String(k));
+  PET.w = 150 * k; // la fenêtre ne change pas : le pet grandit depuis ses pieds, les bornes d'écran suivent
+  PET.h = 112 * k;
   soundSettings = { enabled: s.sound, volume: s.volume, mode: s.soundMode };
   renderStealth();
   setSkin(pet, s.skinColor, s.skinAccessory);

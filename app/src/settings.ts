@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { EMPTY, isUnlocked, progress, type Counters } from "./achievements";
 import { ACCESSORIES, COLORS } from "./skins";
 
-type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; soundMode: "all" | "alerts"; chatShortcut: string; stealth: boolean; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
+type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; soundMode: "all" | "alerts"; chatShortcut: string; stealth: boolean; petScale: number; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
 type Status = { hooks: boolean; style: boolean; login: boolean; installed: boolean };
 
 const $ = <T extends HTMLElement>(id: string) => document.querySelector<T>(`#${id}`)!;
@@ -23,6 +23,7 @@ const fields = {
   volume: $<HTMLInputElement>("volume"),
   chatShortcut: $<HTMLSelectElement>("chatShortcut"),
   stealth: $<HTMLInputElement>("stealth"),
+  petScale: $<HTMLInputElement>("petScale"),
   emotes: $<HTMLInputElement>("emotes"),
   emoteEverySec: $<HTMLInputElement>("emoteEverySec"),
   skinAccessory: $<HTMLSelectElement>("skinAccessory"),
@@ -47,6 +48,7 @@ function readForm(): Settings {
     volume: Number(fields.volume.value),
     chatShortcut: fields.chatShortcut.value,
     stealth: fields.stealth.checked,
+    petScale: Number(fields.petScale.value),
     emotes: fields.emotes.checked,
     emoteEverySec: Number(fields.emoteEverySec.value),
     skinColor: skinColor(),
@@ -58,6 +60,7 @@ function showOutputs() {
   const s = readForm();
   $("cooldown-out").textContent = s.cooldownSec === 0 ? "toujours" : fmtSeconds(s.cooldownSec);
   $("sleep-out").textContent = fmtSeconds(s.sleepAfterSec);
+  $("petScale-out").textContent = `${Math.round(s.petScale * 100)} %`;
   $("volume-out").textContent = `${Math.round(s.volume * 100)} %`;
   fields.volume.disabled = !s.sound;
   fields.soundMode.disabled = !s.sound;
@@ -113,6 +116,7 @@ $("quit").addEventListener("click", () => invoke("quit"));
   fields.volume.value = String(s.volume);
   fields.chatShortcut.value = s.chatShortcut;
   fields.stealth.checked = s.stealth;
+  fields.petScale.value = String(s.petScale ?? 1);
   fields.emotes.checked = s.emotes;
   fields.emoteEverySec.value = String(s.emoteEverySec);
   fields.skinAccessory.value = s.skinAccessory;

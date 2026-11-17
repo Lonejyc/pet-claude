@@ -65,7 +65,7 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
 #stats { position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); padding: 1px 9px; border: 2px solid #222; border-radius: 10px; background: #fff; color: #222; white-space: nowrap; font: 700 10px/15px system-ui, sans-serif; }
 #stats[hidden] { display: none; }
 /* mode furtif pendant un appel : tout petit et discret */
-body.stealth #pet { scale: 0.55; transform-origin: 50% 100%; opacity: 0.6; }
+body.stealth #pet { scale: calc(var(--size, 1) * 0.55); transform-origin: 50% 100%; opacity: 0.6; }
 #pet.dropping .squash { transform: scale(1.1, 0.92); filter: drop-shadow(0 0 8px #fff) drop-shadow(0 0 3px #ffd34e); }
 #chat-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-bottom: 8px; }
 #chat-chips span { padding: 0 8px; border: 2px solid #222; border-radius: 10px; background: var(--tag); color: #fff; cursor: pointer;
@@ -74,6 +74,7 @@ body.stealth #pet { scale: 0.55; transform-origin: 50% 100%; opacity: 0.6; }
 #chat-chips span.none { max-width: 230px; background: #fff; color: #222; opacity: 1; cursor: default; text-align: center; }
 #pet {
   --rx: 0; --ry: 0; --lx: 0; --ly: 0; --k: 1; /* regard et orientation, pilotés par la position du curseur */
+  scale: var(--size, 1); transform-origin: 50% 100%; margin-top: calc(112px * (var(--size, 1) - 1)); /* la bulle reste juste au-dessus du pet */
   position: relative; width: 150px; height: 112px; perspective: 600px; user-select: none; cursor: grab; animation: bounce 1.6s ease-in-out infinite;
 }
 #pet * { pointer-events: none; } /* tous les clics tombent sur #pet */
