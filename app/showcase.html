@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="/src/styles.css" />
     <style>
-      html, body { width: 1500px; height: 310px; margin: 0; display: block; overflow: hidden; background: transparent; }
+      html, body { width: 1800px; height: 310px; margin: 0; display: block; overflow: hidden; background: transparent; }
       .plate { position: absolute; inset: 0; border-radius: 36px; background: radial-gradient(ellipse at 20% 0%, #5a50c0 0%, #342d7c 50%, #1f1b4a 100%); }
       .row { position: absolute; inset: 0; display: flex; justify-content: space-around; align-items: flex-end; padding: 0 20px 84px; }
       .slot { position: relative; width: 200px; height: 112px; display: flex; justify-content: center; }
@@ -21,6 +21,7 @@
     <div class="row" id="row"></div>
     <script type="module">
       import { buildPet } from "/src/pet3d.ts";
+      import { setSkin } from "/src/skins.ts";
       const states = [
         ["au repos", {}],
         ["lit", { tool: "read" }],
@@ -29,17 +30,20 @@
         ["cherche", { tool: "web" }],
         ["s'inquiète", { state: "worried" }],
         ["dort", { state: "sleeping" }],
+        ["sue", { cls: "sweat" }],
+        ["couronne", { color: "violet", acc: "crown" }],
       ];
       const row = document.getElementById("row");
-      for (const [label, { tool, state }] of states) {
+      for (const [label, { tool, state, cls, color, acc }] of states) {
         const slot = document.createElement("div");
         slot.className = "slot";
         // mêmes structure et attributs que la vraie page du pet : les règles CSS visent #pet[data-state] / #pet[data-tool]
-        slot.innerHTML = `<div class="shadow"></div><div id="pet" data-state="${state ?? "idle"}" ${tool ? `data-tool="${tool}"` : ""}
+        slot.innerHTML = `<div class="shadow"></div><div id="pet" class="${cls ?? ""}" data-state="${state ?? "idle"}" ${tool ? `data-tool="${tool}"` : ""}
           style="--rx:-4; --ry:22; --lx:0.6; --ly:0.3"><div class="zzz"><span>z</span><span>z</span><span>Z</span></div>
           <div class="squash"><div class="rig"></div></div></div><span>${label}</span>`;
         row.append(slot);
         buildPet(slot.querySelector(".rig"));
+        setSkin(slot.querySelector("#pet"), color ?? "orange", acc ?? "none");
       }
     </script>
   </body>

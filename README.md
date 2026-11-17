@@ -6,7 +6,7 @@
 il lit avec des lunettes, tape sur son clavier, martèle quand Claude modifie un fichier,<br>
 s'inquiète quand une commande échoue, et te répond dans une bulle.</p>
 
-<p align="center"><img src="docs/images/etats.png" alt="Les états du pet : au repos, lit, tape, modifie, cherche, s'inquiète, dort" width="100%"></p>
+<p align="center"><img src="docs/images/etats.png" alt="Les états du pet : au repos, lit, tape, modifie, cherche, s'inquiète, dort, sue, et un skin violet avec couronne" width="100%"></p>
 
 > **Beta** : testé sur macOS (Apple Silicon) avec Claude Code. Voir « Limites connues ».
 > Téléchargement : [page des releases](https://github.com/Lonejyc/pet-claude/releases).
@@ -43,7 +43,7 @@ s'inquiète quand une commande échoue, et te répond dans une bulle.</p>
 - **Coût et contexte de la session** : au survol du pet (« boutique · 1,84 $ · contexte 68 % ») et dans le menu de la barre de menus. Calculés en local depuis le transcript de la session
   (`~/.claude/projects/…`) ; une alerte douce apparaît quand le contexte atteint 80 % (la compaction automatique approche). Le coût est une estimation à partir d'une grille de tarifs
   embarquée ; la taille de la fenêtre n'étant pas dans le transcript, elle est supposée à 200 000 tokens (1 000 000 dès que le contexte dépasse 200 000).
-- **Taille réglable** : Réglages > Apparence, de 70 % à 150 %.
+- **Taille réglable** : de 70 % à 150 % (Réglages > Comportement), le pet grandit depuis ses pieds.
 - **Succès locaux** : l'usage réel débloque des accessoires, à choisir dans Réglages > Apparence : casque de chantier (100 fichiers modifiés), lunettes de soleil
   (10 tests ou builds réparés), auréole (1 session sans erreur d'outil), couronne (3 sessions sans erreur). Les compteurs sont stockés dans un fichier local
   (`achievements.json`, dossier de l'app), jamais envoyés ; un accessoire déjà choisi reste affiché même s'il est à débloquer.
@@ -106,7 +106,7 @@ Prérequis : macOS sur Apple Silicon, [Claude Code](https://claude.com/claude-co
 | `/settings` ou `/quit` dans le champ | idem, au clavier (l'icône Dock n'apparaît que pendant les réglages) |
 | `/emote` (ou `/emote six-seven`, `/emote cymbals`) dans le champ | joue une emote tout de suite |
 
-Dans **Réglages** : couleur et accessoire du pet (Apparence, avec les accessoires à débloquer), sons (volume, « alertes seulement »), raccourci du mini-chat,
+Dans **Réglages** : taille, couleur et accessoire du pet (Apparence, avec les accessoires à débloquer), sons (volume, « alertes seulement »), raccourci du mini-chat,
 mode furtif, et un mode « emotes au lieu de dormir » (six seven, singe à cymbales).
 
 ## Ce qui est modifié sur ta machine
