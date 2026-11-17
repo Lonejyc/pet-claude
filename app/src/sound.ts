@@ -118,39 +118,86 @@ function noiseHit(h: Hit) {
   src.stop(end);
 }
 
-const tone = (from: number, to: number, ms: number, type: OscillatorType = "square", vol = 0.04, delay = 0) =>
-  voice({ from, to, ms, type, vol, delay });
+// Une note de cloche/marimba : le fondamental dure, les partiels inharmoniques s'éteignent vite (c'est ce qui donne le « métal » ou le « bois »).
+const bell = (f: number, delay: number, ms: number) => {
+  voice({ from: f, ms, type: "sine", vol: 0.05, delay, wet: 0.35, attack: 0.002, cents: 4 });
+  voice({ from: f * 2.76, ms: ms * 0.4, type: "sine", vol: 0.02, delay, wet: 0.3, attack: 0.001, cents: 4 });
+  voice({ from: f * 4, ms: ms * 0.2, type: "sine", vol: 0.012, delay, attack: 0.001, cents: 4 });
+};
 
-// trois hauteurs de touche : jamais la même deux fois de suite
-const KEY_PITCHES = [1500, 1800, 2100];
+// Voix : gamme pentatonique, jamais deux fois la même note de suite.
+const VOICE_NOTES = [392, 440, 523, 587, 659];
+let lastVoice = 0;
+
+// Touches : trois claquements différents, jamais le même deux fois de suite.
+const KEYS = [
+  { click: 2800, thock: 150 },
+  { click: 3400, thock: 180 },
+  { click: 4000, thock: 210 },
+];
 let lastKey = 0;
 
 export const sound = {
-  // une syllabe de "voix" : hauteur aléatoire, façon Animal Crossing
+  // une syllabe de « voix » (façon Animal Crossing) : timbre doux de triangle + octave, petit souffle de consonne
   blip: () => {
-    const f = 380 + Math.random() * 180;
-    tone(f, f * 1.05, 55);
+    lastVoice = pickNot(VOICE_NOTES.length, lastVoice);
+    const f = jitter(VOICE_NOTES[lastVoice], 0.03);
+    voice({ from: f, to: f * 1.04, ms: 60, type: "triangle", vol: 0.035, lowpass: 1800 });
+    voice({ from: f * 2, to: f * 2.08, ms: 40, type: "sine", vol: 0.012 });
+    noiseHit({ ms: 12, vol: 0.02, filter: "bandpass", freq: 2600, q: 2 });
   },
-  squish: () => tone(220, 140, 80, "sine", 0.08),
+  // l'écrasement : un « ploc » mou, avec le souffle d'air qui s'échappe
+  squish: () => {
+    voice({ from: 220, to: 140, ms: 90, type: "sine", vol: 0.07, cents: 20 });
+    noiseHit({ ms: 100, vol: 0.06, filter: "lowpass", freq: 1100, to: 300, q: 0.7 });
+  },
+  // ressort : deux glissandos de sinus avec leur harmonique qui vibre
   boing: () => {
-    tone(180, 520, 130, "sine", 0.08);
-    tone(520, 240, 160, "sine", 0.06, 120);
+    voice({ from: 180, to: 520, ms: 130, type: "sine", vol: 0.08, wet: 0.15 });
+    voice({ from: 520, to: 240, ms: 160, type: "sine", vol: 0.06, delay: 120, wet: 0.15 });
+    voice({ from: 360, to: 1040, ms: 90, type: "triangle", vol: 0.015, cents: 30 });
+    voice({ from: 1040, to: 480, ms: 110, type: "triangle", vol: 0.012, delay: 120, cents: 30 });
   },
+  // l'inquiétude : deux notes qui descendent, désaccordées l'une contre l'autre pour trembler
   worried: () => {
-    tone(330, 300, 130, "triangle", 0.07);
-    tone(262, 220, 200, "triangle", 0.07, 140);
+    for (const [from, to, ms, delay] of [[330, 300, 130, 0], [262, 220, 200, 140]]) {
+      voice({ from, to, ms, type: "triangle", vol: 0.05, delay, lowpass: 1500, cents: -14, wet: 0.15 });
+      voice({ from, to, ms, type: "triangle", vol: 0.035, delay, lowpass: 1500, cents: 14, wet: 0.15 });
+      voice({ from: from / 2, to: to / 2, ms, type: "sine", vol: 0.03, delay });
+    }
   },
-  yelp: () => tone(700, 1100, 110, "square", 0.05),
-  tada: () => [523, 659, 784, 1047].forEach((f, i) => voice({ from: f, ms: 120, type: "triangle", vol: 0.06, delay: i * 90, wet: 0.4 })),
+  // petit cri aigu : dent de scie adoucie qui monte puis retombe, avec un souffle
+  yelp: () => {
+    voice({ from: 700, to: 1200, ms: 70, type: "sawtooth", vol: 0.05, lowpass: 2600 });
+    voice({ from: 1200, to: 900, ms: 60, type: "sawtooth", vol: 0.04, delay: 65, lowpass: 2600 });
+    voice({ from: 1400, to: 2200, ms: 90, type: "sine", vol: 0.015 });
+    noiseHit({ ms: 100, vol: 0.02, filter: "bandpass", freq: 3000, q: 1.5 });
+  },
+  // fanfare de marimba/cloche : do-mi-sol-do, la dernière note résonne
+  tada: () => [523, 659, 784, 1047].forEach((f, i, a) => bell(f, i * 90, i === a.length - 1 ? 900 : 450)),
+  // coup de marteau : claquement de bois (bruit) + corps qui résonne
   tok: () => {
-    tone(900, 300, 40, "square", 0.08);
-    tone(140, 70, 90, "sine", 0.1);
+    noiseHit({ ms: 25, vol: 0.15, filter: "bandpass", freq: 1800, q: 2 });
+    voice({ from: 230, to: 140, ms: 80, type: "sine", vol: 0.13, attack: 0.001, wet: 0.1 });
+    voice({ from: 460, to: 360, ms: 40, type: "sine", vol: 0.03, attack: 0.001 });
   },
+  // frappe de clavier mécanique : clic de bruit + « thock » grave
   key: () => {
-    lastKey = pickNot(KEY_PITCHES.length, lastKey);
-    tone(jitter(KEY_PITCHES[lastKey], 0.08), 700, 18, "square", 0.03);
-    noiseHit({ ms: 14, vol: 0.05, filter: "bandpass", freq: 3200, q: 1.2 }); // le clac de la touche
+    lastKey = pickNot(KEYS.length, lastKey);
+    const k = KEYS[lastKey];
+    noiseHit({ ms: 14, vol: 0.05, filter: "bandpass", freq: jitter(k.click, 0.05), q: 1.2 });
+    voice({ from: jitter(k.thock, 0.05), to: k.thock * 0.65, ms: 45, type: "sine", vol: 0.03, attack: 0.001 });
+    voice({ from: 1800, to: 900, ms: 12, type: "square", vol: 0.008, lowpass: 3000 });
   },
-  crash: () => [4200, 5900, 7600].forEach((f) => tone(f, f * 0.9, 220, "sawtooth", 0.02)), // cymbales
-  thump: () => tone(130, 60, 110, "sine", 0.12),
+  // cymbales : souffle aigu qui s'éteint lentement + partiels métalliques inharmoniques
+  crash: () => {
+    noiseHit({ ms: 480, vol: 0.14, filter: "highpass", freq: 6000, q: 0.5, wet: 0.3 });
+    noiseHit({ ms: 260, vol: 0.05, filter: "bandpass", freq: 9000, q: 0.8 });
+    for (const f of [3500, 5100, 6800]) voice({ from: f, ms: 360, type: "sine", vol: 0.008, cents: 40, attack: 0.001 });
+  },
+  // impact sourd : grosse caisse + souffle grave
+  thump: () => {
+    voice({ from: 130, to: 55, ms: 130, type: "sine", vol: 0.12, attack: 0.002, wet: 0.12 });
+    noiseHit({ ms: 60, vol: 0.08, filter: "lowpass", freq: 260, q: 0.7, attack: 0.002 });
+  },
 };

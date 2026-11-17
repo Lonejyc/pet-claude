@@ -88,7 +88,9 @@ multi-couches, micro-variations aléatoires, courte réverb, mastering (compress
   *Accept.* : tests vitest sur les fonctions pures (enveloppes, tirage round-robin, mapping volume) ; aucun clic/
   saturation à fort volume ; `[?]` écoute humaine.
 
-- [ ] **T03 — Refonte des 10 sons existants** dep: T02
+- [?] **T03 — Refonte des 10 sons existants** dep: T02
+  *Fait (commit `feat(T03)`)* : les 10 sons sont en 2 à 4 couches (bruit filtré, corps résonnants, partiels inharmoniques, réverb) ; banc d'écoute `app/sounds.html` (`npm run dev` puis `/sounds.html`). Mesuré hors ligne : aucun son silencieux ni invalide, niveaux dans la plage de l'ancien moteur.
+  *À valider par l'humain* : écouter chaque son sur `sounds.html` (surtout `tok`, `key`, `crash`, `tada`, `blip`) et dire lesquels sonnent encore « générés » : on affine les paramètres de `sound.ts`.
   `tok` (marteau : transitoire bruit + corps boisé résonant), `key` (clic mécanique : bruit bandpass + « thock »
   grave, 3-4 variantes), `crash` (cymbale : bruit filtré + partiels métalliques inharmoniques, longue décroissance),
   `thump`, `tada` (timbre de cloche/marimba, pas un arpège carré), `blip` (voix : formants simples), `squish`,
