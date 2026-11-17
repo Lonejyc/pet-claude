@@ -75,7 +75,7 @@ deux bras carrés, huit pieds courts, des yeux rectangulaires. Il doit être att
 **Voix et sons**
 - Bulle de BD : fond blanc, contour de 3 px `#222`, ombre portée dure (3 px, sans flou), coins arrondis, queue vers le pet ; typographie manuscrite système (*Chalkboard SE*, *Comic Sans MS* en secours). Le texte s'écrit lettre par lettre.
 - Ton : malicieux, taquin mais bienveillant, tutoiement, une seule phrase de 60 caractères maximum, jamais au détriment de la réponse technique.
-- Sons 100 % synthétisés (WebAudio, aucun fichier), en plusieurs couches : bruit filtré, corps résonnants, partiels de cloche, petite réverb de pièce. Les frappes de clavier et de marteau s'aiguisent et s'accélèrent quand les outils s'enchaînent vite. Réglage « Alertes seulement » : seuls l'erreur et la fin de tâche restent audibles.
+- Sons 100 % synthétisés (WebAudio, aucun fichier), en plusieurs couches : bruit filtré, corps résonnants, partiels de cloche, petite réverb de pièce. Les frappes de clavier et de marteau s'aiguisent et s'accélèrent quand les outils s'enchaînent vite. Réglage « Alertes seulement » : seuls l'erreur, la fin de tâche et la demande de permission restent audibles.
 - Plusieurs sessions : chaque projet reçoit une teinte distincte (angle d'or) sur une pastille posée au bord de la bulle.
 
 **Réglages** : une fenêtre sobre aux tons chauds (fond crème, ou brun foncé en mode sombre), cartes blanches, interrupteurs arrondis et l'orange du pet comme unique accent.
@@ -93,23 +93,36 @@ Prérequis : macOS sur Apple Silicon, [Claude Code](https://claude.com/claude-co
 |---|---|
 | Clic | il s'écrase comme une balle |
 | Glisser / lâcher en mouvement | le déplacer / le lancer |
-| Double-clic | poser une question (Entrée envoie, Échap ferme, Tab change de session) |
+| Double-clic | poser une question (Entrée envoie, Échap ferme, Tab change de session, ⌥1 / ⌥2 / ⌥3 pour une action rapide) |
+| Fichier (image, log…) déposé sur le pet | l'ajoute à une question du mini-chat |
+| Raccourci global (⌃⌥ Espace par défaut) | ouvre le mini-chat au centre de l'écran, même pet masqué |
+| Survol | coût de la session et remplissage du contexte |
+| Molette ou clic droit | feuillette les sessions et relit leur dernier message |
+| Clic sur la bulle d'une fin de tâche | ramène ton terminal au premier plan |
+| Bulle « Autoriser / Refuser » | répond à une demande de permission de Claude Code (Entrée / Échap si la fenêtre a le focus) |
+| ‹ › dans une réponse du chat | relit les 4 dernières réponses ; « Copier le code » copie les blocs de code |
 | Icône du pet dans la barre de menus | un menu natif macOS (limites du forfait, coût estimé, sessions) avec **Masquer le pet**, **Réglages…** et **Quitter** |
 | `/settings` ou `/quit` dans le champ | idem, au clavier (l'icône Dock n'apparaît que pendant les réglages) |
 | `/emote` (ou `/emote six-seven`, `/emote cymbals`) dans le champ | joue une emote tout de suite |
 
-Dans **Réglages** : couleur et accessoire du pet (Apparence), et un mode « emotes au lieu de dormir » (six seven, singe à cymbales).
+Dans **Réglages** : couleur et accessoire du pet (Apparence, avec les accessoires à débloquer), sons (volume, « alertes seulement »), raccourci du mini-chat,
+mode furtif, et un mode « emotes au lieu de dormir » (six seven, singe à cymbales).
 
 ## Ce qui est modifié sur ta machine
 - `/Applications/pet-claude.app`
 - Lecture seule : l'item « Claude Code-credentials » du Keychain (via `/usr/bin/security`, token envoyé uniquement à `api.anthropic.com`
   pour les limites du forfait), `~/.claude.json` (cache d'usage) et les transcripts `~/.claude/projects/**/*.jsonl` (coût estimé).
 - `~/.claude/settings.json` : neuf hooks (`curl` vers `localhost:4242`) **ajoutés à côté des tiens**, sauvegarde dans
-  `settings.json.bak-pet-claude`. Si tu coches la personnalité : `outputStyle: "Pet"` et `~/.claude/output-styles/pet.md`.
+  `settings.json.bak-pet-claude`. L'un d'eux, `PermissionRequest`, laisse le pet afficher « Autoriser / Refuser » : il attend ton clic jusqu'à 20 s, puis rend la main
+  à la boîte de dialogue de ton terminal (jamais d'« oui » par défaut). « Retirer » dans les Réglages (ou `uninstall.sh`) les enlève tous. Si tu coches la personnalité : `outputStyle: "Pet"` et `~/.claude/output-styles/pet.md`.
 - `~/Library/LaunchAgents/io.github.lonejyc.pet-claude.plist` (lancement au démarrage, optionnel)
 - `~/Library/Application Support/io.github.lonejyc.pet-claude/` : tes réglages (`settings.json`), tes compteurs de succès (`achievements.json`) et le secret du pet (`token`, lisible par toi seul)
 
-Aucune donnée ne quitte ta machine. Chaque question du mini-chat est un appel normal à Claude (donc comptée comme tel).
+Ce que le pet lit ou lance, en local : le nom de l'app au premier plan (macOS, pour te ramener à ton terminal), le drapeau « micro utilisé » de CoreAudio (mode furtif, aucun son capté),
+`git diff --shortstat` dans le dossier du projet (lecture seule), `pbcopy` (bouton « Copier le code »), `open -b` (retour au terminal) et le transcript de la session (coût, contexte).
+
+Aucune donnée ne quitte ta machine, sauf ce que Claude lit lui-même : chaque question du mini-chat est un appel normal à Claude (donc comptée comme tel),
+et un fichier déposé sur le pet est lu par Claude.
 
 ## Sécurité et vie privée
 - Le pet n'écoute que sur `127.0.0.1:4242` (jamais sur le réseau).
@@ -119,7 +132,8 @@ Aucune donnée ne quitte ta machine. Chaque question du mini-chat est un appel n
 - Ce secret n'empêche pas un programme qui tourne déjà sous ton compte de lire `~/.claude/settings.json` et de le copier : c'est
   le même niveau de confiance que tes autres réglages.
 - Le mini-chat ne dispose que de `Read`, `Grep` et `Glob` : il peut lire ton code, mais ne modifie rien et ne lance aucune commande.
-  Sans session ouverte, il n'a aucun outil.
+  Sans session ouverte, il n'a aucun outil, sauf `Read` sur le seul fichier que tu viens de déposer (dont le dossier est rendu lisible pour cette question).
+- Une décision de permission ne peut venir que d'un clic dans la fenêtre du pet : aucune route du serveur local ne permet d'approuver.
 - Les modifications de `~/.claude/settings.json` sont atomiques (fichier temporaire puis renommage), conservent les permissions,
   sont précédées d'une sauvegarde, et sont **refusées sans rien écrire** si ce fichier n'est pas du JSON valide.
 - Mise à jour depuis les betas 1 et 2 : l'app migre toute seule l'ancien identifiant (`fr.perso.petclaude`) et met à jour
@@ -141,6 +155,9 @@ Aucune donnée ne quitte ta machine. Chaque question du mini-chat est un appel n
   estimation (grille de tarifs copiée à la main, modèles inconnus comptés sans coût), pas ta facture.
 - Un seul pet à la fois : si deux instances tournent (par ex. version de développement + installée), seule la première reçoit les hooks.
 - Les accessoires du pet (clavier, marteau, enclume, jumelles) sont positionnés « à l'œil » et peuvent légèrement traverser le corps.
+- Le raccourci global peut être déjà pris par une autre app ou par macOS : change-le dans les Réglages. Le glisser-déposer ne prend pas en charge les liens (URL).
+- Le focus au clic sur la bulle se fait par app (pas par onglet de terminal). Le mode furtif repose sur l'usage du micro : une dictée vocale compte aussi, un partage d'écran sans micro non.
+- La taille de la fenêtre de contexte n'est pas dans les transcripts : elle est supposée à 200 000 tokens (1 000 000 au-delà).
 
 ## Licence et mentions légales
 - Code publié sous **licence MIT** (voir [`LICENSE`](LICENSE)). Les licences des dépendances sont listées dans
@@ -153,11 +170,11 @@ Aucune donnée ne quitte ta machine. Chaque question du mini-chat est un appel n
 ## Développer
 ```sh
 cd app && npm install && npm run tauri dev      # pet en développement (Rust requis)
-cd app && npm run build && cd src-tauri && cargo test   # tests (la CI lance la même chose)
+cd app && npm test && npm run build && cd src-tauri && cargo test && cargo clippy -- -D warnings   # tests et lint (la CI lance la même chose)
 ./scripts/demo.sh                               # rejoue toutes les animations sans Claude
 ./scripts/make-icon.sh                          # régénère l'icône depuis le pet 3D (serveur de dev lancé)
 ./scripts/make-readme-images.sh                 # régénère les images du README depuis le pet 3D
 ./installer/build-pkg.sh                        # construit l'installateur .pkg
 ```
-Stack : Tauri 2, TypeScript, CSS 3D, `tauri-nspanel`. Fenêtre en `NSPanel` non activant ; positions et souris en
+Stack : Tauri 2, TypeScript, CSS 3D, `tauri-nspanel`, `tauri-plugin-global-shortcut`. Fenêtre en `NSPanel` non activant ; positions et souris en
 coordonnées natives macOS (les conversions de Tauri se mélangent entre écrans d'échelles différentes).

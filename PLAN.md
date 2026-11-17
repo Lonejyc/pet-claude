@@ -215,7 +215,9 @@ multi-couches, micro-variations aléatoires, courte réverb, mastering (compress
 
 ### Phase 8 — Clôture
 
-- [ ] **T17 — Doc et notes de version** dep: toutes
+- [?] **T17 — Doc et notes de version** dep: toutes
+  *Fait (commit `feat(T17)`)* : README relu face au code et corrigé (sons d'alerte incluant la permission, tableau des gestes complété, section « Ce qui est modifié » : hook `PermissionRequest`, ce que le pet lit ou lance, fichier déposé lu par Claude, outil `Read` du seul fichier déposé, limites ajoutées, commande de tests avec clippy, stack) ; `docs/releases/0.1.0-beta.7.md` (brouillon : version, fichier et SHA-256 à renseigner à la publication) ; vérifié que `uninstall.sh` retire bien tous les hooks (CLI `--remove-hooks`, `is_ours` élargi, testé). `BUG.md` (non suivi) : bugs 1 et 2 marqués corrigés en T01, les autres sont inchangés. **Les numéros de version ne sont pas changés** (publication = action humaine).
+  *À valider par l'humain* : relire le README et les notes (ton, exactitude) ; lancer les vérifications `[?]` listées par tâche avant de publier.
   README (fonctionnalités, sécurité/vie privée : drag & drop, permissions, raccourci), `docs/releases/0.1.0-beta.7.md`
   (format existant), `BUG.md` à jour. Vérifier que les hooks/permissions documentés dans « Ce qui est modifié sur
   ta machine » sont exacts. *Accept.* : relecture croisée README ↔ code.
