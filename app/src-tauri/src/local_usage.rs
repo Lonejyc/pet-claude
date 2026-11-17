@@ -22,7 +22,7 @@ const PRICES: &[(&str, f64, f64, f64)] = &[
 ];
 
 /// "2026-10-19T08:24:51.592Z" -> secondes depuis 1970 (UTC), sans dépendance de date.
-fn epoch(ts: &str) -> Option<i64> {
+pub fn epoch(ts: &str) -> Option<i64> {
     let n = |r: std::ops::Range<usize>| ts.get(r)?.parse::<i64>().ok();
     let (y, m, d) = (n(0..4)?, n(5..7)?, n(8..10)?);
     let y = if m <= 2 { y - 1 } else { y };

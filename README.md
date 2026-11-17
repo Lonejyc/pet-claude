@@ -66,7 +66,7 @@ Prérequis : macOS sur Apple Silicon, [Claude Code](https://claude.com/claude-co
 | Clic | il s'écrase comme une balle |
 | Glisser / lâcher en mouvement | le déplacer / le lancer |
 | Double-clic | poser une question (Entrée envoie, Échap ferme, Tab change de session) |
-| Icône du pet dans la barre de menus | une carte d'usage (limites du forfait, coût estimé, sessions) avec **Masquer le pet**, **Réglages…** et **Quitter** ; un second clic la ferme |
+| Icône du pet dans la barre de menus | un menu natif macOS (limites du forfait, coût estimé, sessions) avec **Masquer le pet**, **Réglages…** et **Quitter** |
 | `/settings` ou `/quit` dans le champ | idem, au clavier (l'icône Dock n'apparaît que pendant les réglages) |
 | `/emote` (ou `/emote six-seven`, `/emote cymbals`) dans le champ | joue une emote tout de suite |
 

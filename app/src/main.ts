@@ -372,7 +372,7 @@ function wake() {
   if (pet.dataset.state === "sleeping") setState("idle");
 }
 
-// La fenêtre d'usage (autre webview) affiche le nombre de sessions : on le lui envoie quand il change.
+// Le menu de la barre de menus (côté Rust) affiche le nombre de sessions : on le lui envoie quand il change.
 let sentSessions = -1;
 setInterval(() => {
   prune(6 * 3600_000);

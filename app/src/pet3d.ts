@@ -60,9 +60,7 @@ export function buildPet(rig: HTMLElement) {
   // cymbales de l'emote du singe : une plaque dorée sur la face intérieure de chaque main, cachée hors de l'emote
   cube(armL, { x: 17.5, y: -1.25, w: 3, h: 20, d: 20, cls: "cymbal", shades: GOLD });
   cube(armR, { x: -3, y: -1.25, w: 3, h: 20, d: 20, cls: "cymbal", shades: GOLD });
-  for (const x of [37.5, 55, 85, 102.5]) {
-    for (const z of [12, -12]) cube(rig, { x, y: 82.5, w: 10, h: 20, d: 10, z, cls: "leg" });
-  }
+  for (const x of [37.5, 55, 85, 102.5]) cube(rig, { x, y: 82.5, w: 10, h: 20, d: 20, cls: "leg" });
   // accessoires : cachés par défaut, affichés selon l'outil en cours (cf. styles.css)
   // clavier : socle de 90 px + 2 rangées de 10 touches. Chaque bras couvre 2 colonnes (1-2 à gauche, 7-8 à droite) ; la variante a/b/c/d règle l'instant où la touche s'enfonce.
   const keyboard = document.createElement("div");

@@ -1,10 +1,11 @@
 mod chat;
 mod local_usage;
+mod menu;
 mod native;
 mod server;
 mod setup;
 
-use tauri::{Emitter, Manager};
+use tauri::{Emitter, Listener, Manager};
 use tauri_nspanel::{tauri_panel, CollectionBehavior, PanelLevel, StyleMask, WebviewWindowExt};
 
 tauri_panel! {
@@ -66,62 +67,27 @@ async fn plan_usage() -> Option<serde_json::Value> {
     value
 }
 
-/// Quand la fenêtre d'usage perd le focus (donc aussi au clic sur l'icône, avant que le clic ne soit relâché).
-static USAGE_BLURRED: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
-
-/// Ouvre ou ferme la fenêtre d'usage, centrée sous l'icône de la barre de menus.
-fn toggle_usage(app: &tauri::AppHandle, icon: tauri::Rect) {
-    let Some(w) = app.get_webview_window("usage") else { return };
-    if w.is_visible().unwrap_or(false) {
-        let _ = w.hide();
-        return;
-    }
-    // un clic sur l'icône l'a déjà fermée en lui retirant le focus : ne pas la rouvrir
-    if USAGE_BLURRED.lock().ok().and_then(|t| *t).is_some_and(|t| t.elapsed().as_millis() < 300) {
-        return;
-    }
-    let scale = w.scale_factor().unwrap_or(1.0);
-    let (pos, size) = (icon.position.to_physical::<f64>(scale), icon.size.to_physical::<f64>(scale));
-    let width = w.outer_size().map_or(0.0, |s| s.width as f64);
-    let _ = w.set_position(tauri::PhysicalPosition::new(pos.x + size.width / 2.0 - width / 2.0, pos.y + size.height));
-    let _ = w.show();
-    let _ = w.set_focus();
-}
-
-/// Icône toujours présente dans la barre de menus : un clic ouvre la fenêtre d'usage (usage, masquer le pet, réglages, quitter).
+/// Icône toujours présente dans la barre de menus : un clic ouvre un menu natif (usage, masquer le pet, réglages, quitter), cf. menu.rs.
 fn menu_bar_icon(app: &tauri::App) -> tauri::Result<()> {
-    use tauri::tray::TrayIconBuilder;
+    use tauri::tray::{TrayIconBuilder, TrayIconEvent};
 
-    let usage = tauri::WebviewWindowBuilder::new(app, "usage", tauri::WebviewUrl::App("usage.html".into()))
-        .inner_size(240.0, 208.0)
-        .decorations(false)
-        .transparent(true)
-        .shadow(false)
-        .resizable(false)
-        .always_on_top(true)
-        .skip_taskbar(true)
-        .visible(false)
-        .build()?;
-    let hide = usage.clone();
-    usage.on_window_event(move |e| {
-        if let tauri::WindowEvent::Focused(false) = e {
-            if let Ok(mut t) = USAGE_BLURRED.lock() {
-                *t = Some(std::time::Instant::now());
-            }
-            let _ = hide.hide();
-        }
-    });
     TrayIconBuilder::with_id("pet-claude")
         .icon(tauri::image::Image::from_bytes(include_bytes!("../icons/tray.png"))?)
         .icon_as_template(true) // silhouette noire que macOS teinte (blanche en mode sombre)
         .tooltip("pet-claude")
-        .on_tray_icon_event(|tray, event| {
-            use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
-            if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, rect, .. } = event {
-                toggle_usage(tray.app_handle(), rect);
+        .menu(&tauri::menu::Menu::new(app)?)
+        .on_menu_event(|app, e| menu::on_event(app, e.id().as_ref()))
+        // le survol précède le clic : les chiffres sont à jour à l'ouverture du menu
+        .on_tray_icon_event(|tray, e| {
+            if let TrayIconEvent::Enter { .. } = e {
+                menu::refresh(tray.app_handle());
             }
         })
         .build(app)?;
+    app.listen("sessions", |e| {
+        menu::SESSIONS.store(e.payload().parse().unwrap_or(0), std::sync::atomic::Ordering::Relaxed);
+    });
+    menu::refresh(app.handle());
     Ok(())
 }
 
@@ -138,11 +104,24 @@ pub fn open_settings(app: &tauri::AppHandle) {
         .resizable(false)
         .build();
     match built {
-        Ok(w) => w.on_window_event(|e| {
-            if let tauri::WindowEvent::Destroyed = e {
-                native::set_dock_visible(false);
+        Ok(w) => {
+            // fenêtre à taille fixe : le bouton vert (grisé) ne sert à rien, on ne garde que fermer et réduire
+            if let Ok(ns_window) = w.ns_window() {
+                use objc2::runtime::AnyObject;
+                unsafe {
+                    let ns_window = &*(ns_window as *const AnyObject);
+                    let zoom: *mut AnyObject = objc2::msg_send![ns_window, standardWindowButton: 2_isize]; // NSWindowZoomButton
+                    if let Some(zoom) = zoom.as_ref() {
+                        let _: () = objc2::msg_send![zoom, setHidden: true];
+                    }
+                }
             }
-        }),
+            w.on_window_event(|e| {
+                if let tauri::WindowEvent::Destroyed = e {
+                    native::set_dock_visible(false);
+                }
+            })
+        }
         Err(e) => eprintln!("fenêtre de réglages : {e}"),
     }
 }
