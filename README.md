@@ -47,7 +47,7 @@ deux bras carrés, huit pieds courts, des yeux rectangulaires. Il doit être att
 **Voix et sons**
 - Bulle de BD : fond blanc, contour de 3 px `#222`, ombre portée dure (3 px, sans flou), coins arrondis, queue vers le pet ; typographie manuscrite système (*Chalkboard SE*, *Comic Sans MS* en secours). Le texte s'écrit lettre par lettre.
 - Ton : malicieux, taquin mais bienveillant, tutoiement, une seule phrase de 60 caractères maximum, jamais au détriment de la réponse technique.
-- Sons 100 % synthétisés (WebAudio, aucun fichier) : « blips » carrés 8 bits pour la voix, sinus pour le squeeze et le rebond, triangle pour l'inquiétude et le ta-da.
+- Sons 100 % synthétisés (WebAudio, aucun fichier), en plusieurs couches : bruit filtré, corps résonnants, partiels de cloche, petite réverb de pièce. Les frappes de clavier et de marteau s'aiguisent et s'accélèrent quand les outils s'enchaînent vite. Réglage « Alertes seulement » : seuls l'erreur et la fin de tâche restent audibles.
 - Plusieurs sessions : chaque projet reçoit une teinte distincte (angle d'or) sur une pastille posée au bord de la bulle.
 
 **Réglages** : une fenêtre sobre aux tons chauds (fond crème, ou brun foncé en mode sombre), cartes blanches, interrupteurs arrondis et l'orange du pet comme unique accent.

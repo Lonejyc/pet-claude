@@ -1,4 +1,4 @@
-import { jitter, pickNot, pinkNoise, reverbImpulse } from "./audio-math";
+import { jitter, pickNot, pinkNoise, reverbImpulse, soundAllowed, type SoundMode } from "./audio-math";
 
 // Sons synthétisés (WebAudio, aucun fichier). Le contexte démarre suspendu tant que l'utilisateur n'a pas cliqué dans la fenêtre.
 let ctx = new AudioContext();
@@ -16,9 +16,13 @@ setInterval(() => {
 
 let enabled = true;
 let volume = 1;
-export const setSoundConfig = (cfg: { enabled: boolean; volume: number }) => {
+let mode: SoundMode = "all";
+let pitch = 1; // allure des outils (cf. toolPace) : hauteur des frappes
+export const setToolPitch = (p: number) => (pitch = p);
+export const setSoundConfig = (cfg: { enabled: boolean; volume: number; mode?: SoundMode }) => {
   enabled = cfg.enabled;
   volume = cfg.volume;
+  mode = cfg.mode ?? "all";
   if (bus) bus.master.gain.value = volume;
 };
 
@@ -137,7 +141,7 @@ const KEYS = [
 ];
 let lastKey = 0;
 
-export const sound = {
+const raw = {
   // une syllabe de « voix » (façon Animal Crossing) : timbre doux de triangle + octave, petit souffle de consonne
   blip: () => {
     lastVoice = pickNot(VOICE_NOTES.length, lastVoice);
@@ -177,16 +181,16 @@ export const sound = {
   tada: () => [523, 659, 784, 1047].forEach((f, i, a) => bell(f, i * 90, i === a.length - 1 ? 900 : 450)),
   // coup de marteau : claquement de bois (bruit) + corps qui résonne
   tok: () => {
-    noiseHit({ ms: 25, vol: 0.15, filter: "bandpass", freq: 1800, q: 2 });
-    voice({ from: 230, to: 140, ms: 80, type: "sine", vol: 0.13, attack: 0.001, wet: 0.1 });
+    noiseHit({ ms: 25, vol: 0.15, filter: "bandpass", freq: 1800 * pitch, q: 2 });
+    voice({ from: 230 * pitch, to: 140 * pitch, ms: 80, type: "sine", vol: 0.13, attack: 0.001, wet: 0.1 });
     voice({ from: 460, to: 360, ms: 40, type: "sine", vol: 0.03, attack: 0.001 });
   },
   // frappe de clavier mécanique : clic de bruit + « thock » grave
   key: () => {
     lastKey = pickNot(KEYS.length, lastKey);
     const k = KEYS[lastKey];
-    noiseHit({ ms: 14, vol: 0.05, filter: "bandpass", freq: jitter(k.click, 0.05), q: 1.2 });
-    voice({ from: jitter(k.thock, 0.05), to: k.thock * 0.65, ms: 45, type: "sine", vol: 0.03, attack: 0.001 });
+    noiseHit({ ms: 14, vol: 0.05, filter: "bandpass", freq: jitter(k.click * pitch, 0.05), q: 1.2 });
+    voice({ from: jitter(k.thock * pitch, 0.05), to: k.thock * pitch * 0.65, ms: 45, type: "sine", vol: 0.03, attack: 0.001 });
     voice({ from: 1800, to: 900, ms: 12, type: "square", vol: 0.008, lowpass: 3000 });
   },
   // cymbales : souffle aigu qui s'éteint lentement + partiels métalliques inharmoniques
@@ -201,3 +205,6 @@ export const sound = {
     noiseHit({ ms: 60, vol: 0.08, filter: "lowpass", freq: 260, q: 0.7, attack: 0.002 });
   },
 };
+
+// Chaque son passe par le filtre du mode « alertes seulement ».
+export const sound = Object.fromEntries(Object.entries(raw).map(([name, play]) => [name, () => soundAllowed(mode, name) && play()])) as unknown as typeof raw;

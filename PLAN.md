@@ -98,7 +98,9 @@ multi-couches, micro-variations aléatoires, courte réverb, mastering (compress
   chaque son en un clic.
   *Accept.* : chaque son a ≥2 couches ; page de démo ; `[?]` validation à l'oreille par l'humain.
 
-- [ ] **T04 — Sons adaptatifs + mode « Discrétion absolue »** dep: T03, T01
+- [?] **T04 — Sons adaptatifs + mode « Discrétion absolue »** dep: T03, T01
+  *Fait (commit `feat(T04)`)* : `toolPace` (écart entre outils → hauteur et cadence des frappes) et `soundAllowed` dans `audio-math.ts` (testés) ; réglage `soundMode` (`all` | `alerts`) dans les 3 endroits + menu « Quels sons » dans les réglages. Mesuré hors ligne sur le vrai moteur : mode alertes = `key` et `blip` muets, `tada` audible ; pitch 0,85 vs 1,2 = 33 vs 42 passages par zéro.
+  *À valider par l'humain* : ouvrir les Réglages (le menu « Quels sons » est bien aligné, grisé quand les sons sont coupés) ; lancer plusieurs outils d'affilée et comparer à un outil isolé.
   Pitch/cadence du `key`/`tok` modulés par la vitesse des outils (délai entre `PreToolUse` successifs). Nouveau
   réglage `soundMode: "all" | "alerts"` (alertes = erreur + fin de tâche uniquement) dans les 3 endroits + UI réglages.
   *Accept.* : tests vitest du mapping vitesse→pitch et du filtre de mode ; réglage visible et appliqué à chaud.

@@ -3,7 +3,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { buildPet } from "./pet3d";
 import { all, anyBusy, color, count, ignored, label, mostRecent, prune, releaseStale, remove, touch, type Session } from "./sessions";
 import { setSkin } from "./skins";
-import { setSoundConfig, sound } from "./sound";
+import { toolPace } from "./audio-math";
+import { setSoundConfig, setToolPitch, sound } from "./sound";
 
 type Hook = { event: string; session?: string | null; cwd?: string | null; tool?: string; message?: string };
 
@@ -108,6 +109,7 @@ function say(text: string, session?: Session) {
 // Le pet reste "au travail" tant qu'une autre session a un outil en cours.
 const settle = () => setState(anyBusy() ? "working" : "idle");
 
+let lastToolAt = 0; // pour l'allure des outils : écart entre deux PreToolUse, toutes sessions confondues
 listen<Hook>("hook", ({ payload }) => {
   const id = payload.session ?? "default";
   if (ignored.has(id)) return;
@@ -127,6 +129,10 @@ listen<Hook>("hook", ({ payload }) => {
   // Fin d'un outil : le clavier se tait, même si Claude continue à rédiger.
   if (payload.event === "PostToolUse") clearInterval(typingTimer);
   if (payload.event === "PreToolUse") {
+    const gap = lastToolAt ? Date.now() - lastToolAt : undefined;
+    lastToolAt = Date.now();
+    const { pitch, intervalMs: interval } = toolPace(gap);
+    setToolPitch(pitch);
     session.busy = true;
     session.tools++;
     setState("working");
@@ -134,7 +140,7 @@ listen<Hook>("hook", ({ payload }) => {
     if (kind) pet.dataset.tool = kind;
     if (kind === "bash") {
       sound.key();
-      typingTimer = setInterval(sound.key, 140);
+      typingTimer = setInterval(sound.key, interval);
     }
   }
   // Claude continue en général après un échec : retour au travail, c'est Stop qui calmera le pet.
@@ -575,14 +581,14 @@ chips.addEventListener("mousedown", (e) => e.preventDefault());
 chatInput.addEventListener("blur", () => setTimeout(closeChat, 150));
 
 // Réglages (fenêtre de réglages) : lus au démarrage, puis appliqués en direct à chaque changement.
-type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
+type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; soundMode: "all" | "alerts"; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
 function applySettings(s: Settings) {
   COOLDOWN_MS = s.cooldownSec * 1000;
   SLEEP_AFTER_MS = s.sleepAfterSec * 1000;
   EMOTES = s.emotes;
   EMOTE_EVERY_MS = s.emoteEverySec * 1000;
   CONFETTI = s.confetti;
-  setSoundConfig({ enabled: s.sound, volume: s.volume });
+  setSoundConfig({ enabled: s.sound, volume: s.volume, mode: s.soundMode });
   setSkin(pet, s.skinColor, s.skinAccessory);
 }
 invoke<Settings>("get_settings").then(applySettings);

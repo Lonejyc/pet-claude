@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { jitter, pickNot, pinkNoise, reverbImpulse } from "./audio-math";
+import { jitter, pickNot, pinkNoise, reverbImpulse, soundAllowed, toolPace } from "./audio-math";
 
 // Générateur pseudo-aléatoire déterministe (LCG) pour des tests reproductibles.
 const seeded = (seed = 1) => () => (seed = (seed * 16807) % 2147483647) / 2147483647;
@@ -48,5 +48,25 @@ describe("reverbImpulse", () => {
     const rms = (a: Float32Array) => Math.sqrt(a.reduce((s, x) => s + x * x, 0) / a.length);
     expect(ir.length).toBe(4000);
     expect(rms(ir.slice(-400))).toBeLessThan(rms(ir.slice(0, 400)) / 20);
+  });
+});
+
+describe("soundAllowed", () => {
+  it("mode all : tout passe", () => expect(["blip", "key", "tada"].every((n) => soundAllowed("all", n))).toBe(true));
+  it("mode alerts : seules l'erreur et la fin de tâche passent", () => {
+    expect(soundAllowed("alerts", "tada")).toBe(true);
+    expect(soundAllowed("alerts", "worried")).toBe(true);
+    for (const n of ["blip", "key", "tok", "crash", "thump", "squish", "boing", "yelp"]) expect(soundAllowed("alerts", n)).toBe(false);
+  });
+});
+
+describe("toolPace", () => {
+  it("outils rapides : aigu et cadence serrée", () => expect(toolPace(300)).toEqual({ pitch: 1.2, intervalMs: 100 }));
+  it("outils lents : grave et cadence lente", () => expect(toolPace(60_000)).toEqual({ pitch: 1.2 - 0.35, intervalMs: 180 }));
+  it("écart inconnu : cadence d'origine de 140 ms", () => expect(toolPace().intervalMs).toBe(140));
+  it("est monotone", () => {
+    const gaps = [400, 1000, 3000, 8000, 20_000];
+    const pitches = gaps.map((g) => toolPace(g).pitch);
+    expect([...pitches].sort((a, b) => b - a)).toEqual(pitches);
   });
 });

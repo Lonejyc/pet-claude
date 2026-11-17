@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { ACCESSORIES, COLORS } from "./skins";
 
-type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
+type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; soundMode: "all" | "alerts"; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
 type Status = { hooks: boolean; style: boolean; login: boolean; installed: boolean };
 
 const $ = <T extends HTMLElement>(id: string) => document.querySelector<T>(`#${id}`)!;
@@ -18,6 +18,7 @@ const fields = {
   sleepAfterSec: $<HTMLInputElement>("sleepAfterSec"),
   confetti: $<HTMLInputElement>("confetti"),
   sound: $<HTMLInputElement>("sound"),
+  soundMode: $<HTMLSelectElement>("soundMode"),
   volume: $<HTMLInputElement>("volume"),
   emotes: $<HTMLInputElement>("emotes"),
   emoteEverySec: $<HTMLInputElement>("emoteEverySec"),
@@ -39,6 +40,7 @@ function readForm(): Settings {
     sleepAfterSec: Number(fields.sleepAfterSec.value),
     confetti: fields.confetti.checked,
     sound: fields.sound.checked,
+    soundMode: fields.soundMode.value as Settings["soundMode"],
     volume: Number(fields.volume.value),
     emotes: fields.emotes.checked,
     emoteEverySec: Number(fields.emoteEverySec.value),
@@ -53,6 +55,7 @@ function showOutputs() {
   $("sleep-out").textContent = fmtSeconds(s.sleepAfterSec);
   $("volume-out").textContent = `${Math.round(s.volume * 100)} %`;
   fields.volume.disabled = !s.sound;
+  fields.soundMode.disabled = !s.sound;
   $("emote-out").textContent = fmtSeconds(s.emoteEverySec);
   fields.emoteEverySec.disabled = !s.emotes;
 }
@@ -101,6 +104,7 @@ $("quit").addEventListener("click", () => invoke("quit"));
   fields.sleepAfterSec.value = String(s.sleepAfterSec);
   fields.confetti.checked = s.confetti;
   fields.sound.checked = s.sound;
+  fields.soundMode.value = s.soundMode;
   fields.volume.value = String(s.volume);
   fields.emotes.checked = s.emotes;
   fields.emoteEverySec.value = String(s.emoteEverySec);

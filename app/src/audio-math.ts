@@ -35,3 +35,16 @@ export function reverbImpulse(sampleRate: number, seconds: number, decayDb = 60,
   for (let i = 0; i < length; i++) out[i] = (rnd() * 2 - 1) * 10 ** ((-decayDb * (i / length)) / 20);
   return out;
 }
+
+export type SoundMode = "all" | "alerts";
+
+// Mode « discrétion absolue » : seules les alertes (erreur, fin de tâche) restent audibles.
+export const ALERT_SOUNDS = ["tada", "worried"];
+export const soundAllowed = (mode: SoundMode, name: string) => mode === "all" || ALERT_SOUNDS.includes(name);
+
+// Allure des outils : plus ils s'enchaînent vite (écart court entre deux PreToolUse), plus les frappes sont aiguës et rapprochées.
+// Écart inconnu (premier outil) = allure moyenne, qui redonne la cadence d'origine de 140 ms.
+export function toolPace(gapMs?: number) {
+  const t = gapMs === undefined ? 0.5 : Math.min(1, Math.max(0, Math.log(gapMs / 500) / Math.log(20_000 / 500)));
+  return { pitch: 1.2 - 0.35 * t, intervalMs: Math.round(100 + 80 * t) };
+}
