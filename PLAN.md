@@ -116,17 +116,18 @@ multi-couches, micro-variations aléatoires, courte réverb, mastering (compress
   AppleScript ; fallback : activer l'app terminal frontale). Seulement si l'app terminal n'est pas déjà au premier plan.
   *Accept.* : test vitest du compteur ; scénario manuel avec Terminal/iTerm ; `[?]` si le focus par onglet n'est pas fiable.
 
-- [ ] **T06 — Spike : validation des permissions en un clic** dep: T01
-  Investigation (doc Claude Code hooks, version installée) : un hook `PermissionRequest`/`PreToolUse` peut-il
-  **bloquer** en attendant une réponse HTTP du pet et renvoyer `allow`/`deny` ? Livrable : `docs/spike-permissions.md`
-  avec verdict, format exact, limites (timeout, sécurité du token), et découpage de l'implémentation en T06b/T06c.
-  *Accept.* : prototype minimal prouvé avec un vrai hook ; sinon verdict « infaisable » documenté et T06b supprimée.
-  Sécurité : le serveur reste en 127.0.0.1 + `X-Pet-Token`, aucune réponse d'approbation sans origine vérifiée.
+- [x] **T06 — Spike : validation des permissions en un clic** dep: T01 (commit `feat(T06)`)
+  Verdict : **faisable**, prouvé avec un vrai Claude Code (allow, deny, hook bloquant). Détails, format et limites : `docs/spike-permissions.md`.
+  Reste à vérifier à la main avant T06b : comportement du dialogue du terminal quand le pet ne répond pas (non testable avec `claude -p`).
 
-- [ ] **T06b — Bulle d'alerte « Autoriser / Refuser »** dep: T06 (si faisable)
-  UI de la bulle avec deux boutons + raccourcis (Entrée/Échap quand la bulle a le focus), outil + argument affichés
-  (tronqués, jamais exécutés), timeout → retombe sur le prompt terminal. *Accept.* : tests du protocole côté
-  `server.rs`, scénario réel avec un `rm`/`git push`.
+- [ ] **T06b — Socle Rust des permissions** dep: T06
+  Hook `PermissionRequest` installé avec `timeout: 30` et `curl -s -m 25` ; `is_ours` (`setup.rs`) élargi à `curl -s -m ` ; route qui retient la requête HTTP
+  jusqu'à la décision ou 20 s (corps vide à l'expiration = pas de décision) ; commande `decide(id, allow)` ; jamais d'allow par défaut ; seul `behavior`/`message` sont renvoyés.
+  *Accept.* : tests Rust (décision → JSON exact, expiration → corps vide, désinstallation retire bien le hook, hooks existants intacts, `EVENTS` + migration).
+
+- [ ] **T06c — Bulle « Autoriser / Refuser »** dep: T06b
+  Bulle avec outil et commande tronquée (`textContent`), décompte, raccourcis (Entrée/Échap), file d'attente, retour au dialogue du terminal à l'expiration.
+  *Accept.* : test vitest de la file et du décompte ; scénario réel avec un `rm` ou un `git push` simulé ; `[?]` pour la vérification en session interactive.
 
 - [ ] **T07 — Raccourci clavier global (⌘⇧C) → mini-chat au centre de l'écran actif** dep: T00
   Plugin `tauri-plugin-global-shortcut` (nouvelle dépendance justifiée : pas de natif simple) + capability.
