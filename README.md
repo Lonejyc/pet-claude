@@ -18,6 +18,9 @@ s'inquiète quand une commande échoue, et te répond dans une bulle.</p>
   (`claude -p --resume --fork-session`, lecture seule) : ta session du terminal n'est pas modifiée. `Tab` change de session.
   Sans session ouverte, il répond aux questions générales mais ne lit aucun fichier : pour une question sur un dossier,
   il te demande d'ouvrir Claude Code dans un terminal, dans ce dossier.
+- **Te prévient** quand une tâche est finie pendant que tu es dans une autre app : il saute, la bulle indique le nombre de fichiers modifiés,
+  et un clic sur la bulle ramène au premier plan l'app où tu as tapé ton dernier prompt (ton terminal). Pour ça, il lit le nom de l'app
+  active (macOS) à chaque prompt et à chaque fin de tâche ; rien n'est enregistré ni envoyé.
 - **Vit** : il cligne des yeux, s'endort, se laisse prendre (il panique), se lance et rebondit sur les bords de l'écran.
 - Visible **au-dessus des apps en plein écran**, sur tous les espaces, multi-écrans.
 

@@ -2,7 +2,7 @@
 //! Les conversions de Tauri/tao se mélangent entre écrans d'échelles ou de hauteurs différentes (le pet apparaissait en double) :
 //! ici tout est en points, y vers le bas, origine en haut à gauche de l'écran principal.
 use objc2::MainThreadMarker;
-use objc2_app_kit::{NSApplication, NSApplicationActivationPolicy, NSEvent, NSScreen, NSWindow};
+use objc2_app_kit::{NSApplication, NSApplicationActivationPolicy, NSEvent, NSScreen, NSWindow, NSWorkspace};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri::Emitter;
@@ -46,6 +46,27 @@ pub fn screens() -> Vec<Screen> {
     let mtm = main_thread();
     let ph = primary_height(mtm);
     NSScreen::screens(mtm).iter().map(|s| Screen { frame: flip(s.frame(), ph), work: flip(s.visibleFrame(), ph) }).collect()
+}
+
+/// Bundle id de l'app au premier plan (jamais celle du pet). Sert à retrouver le terminal d'une session : c'est l'app active quand on envoie un prompt.
+#[tauri::command]
+pub fn frontmost_app() -> Option<String> {
+    let app = NSWorkspace::sharedWorkspace().frontmostApplication()?;
+    if app.processIdentifier() == std::process::id() as i32 {
+        return None;
+    }
+    Some(app.bundleIdentifier()?.to_string())
+}
+
+/// Un bundle id ne contient que lettres, chiffres, points et tirets : on refuse tout le reste avant de le passer à `open`.
+fn valid_bundle_id(id: &str) -> bool {
+    !id.is_empty() && !id.starts_with('-') && id.len() < 200 && id.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-')
+}
+
+/// Ramène une app au premier plan (`open -b` : fiable depuis une app « accessory », contrairement à `activate`).
+#[tauri::command]
+pub fn focus_app(bundle_id: String) -> bool {
+    valid_bundle_id(&bundle_id) && std::process::Command::new("/usr/bin/open").args(["-b", &bundle_id]).spawn().is_ok()
 }
 
 #[tauri::command]
@@ -172,4 +193,19 @@ pub fn pointer_loop(window: WebviewWindow) {
             }
         });
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::valid_bundle_id;
+
+    #[test]
+    fn bundle_ids_are_validated_before_reaching_open() {
+        for ok in ["com.apple.Terminal", "com.googlecode.iterm2", "dev.warp.Warp-Stable"] {
+            assert!(valid_bundle_id(ok), "{ok}");
+        }
+        for bad in ["", "-a", "--args", "com.x y", "a;rm -rf", "com/apple", "é.app"] {
+            assert!(!valid_bundle_id(bad), "{bad}");
+        }
+    }
 }

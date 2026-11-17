@@ -1,12 +1,12 @@
 import { emit, listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { buildPet } from "./pet3d";
-import { all, anyBusy, color, count, ignored, label, mostRecent, prune, releaseStale, remove, touch, type Session } from "./sessions";
+import { all, anyBusy, color, count, ignored, label, editSummary, mostRecent, prune, releaseStale, remove, touch, type Session } from "./sessions";
 import { setSkin } from "./skins";
 import { toolPace } from "./audio-math";
 import { setSoundConfig, setToolPitch, sound } from "./sound";
 
-type Hook = { event: string; session?: string | null; cwd?: string | null; tool?: string; message?: string };
+type Hook = { event: string; session?: string | null; cwd?: string | null; tool?: string; file?: string; message?: string };
 
 const pet = document.querySelector<HTMLElement>("#pet")!;
 const bubble = document.querySelector<HTMLElement>("#bubble")!;
@@ -81,14 +81,17 @@ const firstSentence = (text: string) => {
 };
 
 // Texte tapé lettre par lettre ; le pet "parle" (petits sauts) tant qu'il tape.
-function say(text: string, session?: Session) {
-  const full = firstSentence(text);
+function say(text: string, session?: Session, extra = "") {
+  const full = firstSentence(text) + (extra ? ` · ${extra}` : "");
   // pastille du projet seulement s'il y a plusieurs sessions : sinon c'est du bruit
   bubbleTag.hidden = !session || count() < 2;
   if (session) {
     bubbleTag.textContent = label(session);
     bubble.style.setProperty("--tag", color(session));
   }
+  // cliquer la bulle ramène le terminal de la session au premier plan
+  if (session?.app) bubble.dataset.app = session.app;
+  else delete bubble.dataset.app;
   let i = 0;
   lastSpokeAt = Date.now();
   clearInterval(typeTimer);
@@ -105,6 +108,22 @@ function say(text: string, session?: Session) {
     bubbleTimer = setTimeout(() => (bubble.hidden = true), 8000);
   }, 35);
 }
+
+// Petit saut de joie (cf. .hop dans styles.css).
+function hop() {
+  pet.classList.remove("hop");
+  void pet.offsetWidth; // relance l'animation si elle tourne déjà
+  pet.classList.add("hop");
+  setTimeout(() => pet.classList.remove("hop"), 700);
+}
+
+// Cliquer la bulle d'une fin de tâche ramène le terminal de la session au premier plan.
+bubble.addEventListener("click", () => {
+  if (!bubble.dataset.app) return;
+  invoke("focus_app", { bundleId: bubble.dataset.app });
+  clearTimeout(bubbleTimer);
+  bubble.hidden = true;
+});
 
 // Le pet reste "au travail" tant qu'une autre session a un outil en cours.
 const settle = () => setState(anyBusy() ? "working" : "idle");
@@ -124,6 +143,9 @@ listen<Hook>("hook", ({ payload }) => {
     session.busy = true;
     session.tools = 0;
     session.failed = false;
+    session.files.clear();
+    // l'app active à cet instant est le terminal où l'utilisateur vient de taper son prompt
+    invoke<string | null>("frontmost_app").then((app) => app && (session.app = app));
     setState("working");
   }
   // Fin d'un outil : le clavier se tait, même si Claude continue à rédiger.
@@ -138,6 +160,7 @@ listen<Hook>("hook", ({ payload }) => {
     setState("working");
     const kind = payload.tool && TOOL_KINDS[payload.tool];
     if (kind) pet.dataset.tool = kind;
+    if (kind === "edit" && payload.file) session.files.add(payload.file);
     if (kind === "bash") {
       sound.key();
       typingTimer = setInterval(sound.key, interval);
@@ -151,11 +174,19 @@ listen<Hook>("hook", ({ payload }) => {
   }
   if (payload.event === "Stop") {
     session.busy = false;
-    if (payload.message && (session.failed || Date.now() - lastSpokeAt > COOLDOWN_MS)) say(payload.message, session);
+    if (payload.message && (session.failed || Date.now() - lastSpokeAt > COOLDOWN_MS)) say(payload.message, session, editSummary(session.files.size));
     else settle();
-    if (CONFETTI && session.tools >= CONFETTI_MIN_TOOLS && !session.failed) confetti();
+    const celebrate = CONFETTI && session.tools >= CONFETTI_MIN_TOOLS && !session.failed;
+    if (celebrate) confetti();
+    // l'utilisateur est ailleurs (Slack, navigateur…) : le pet saute, avec le ta-da si les confettis ne l'ont pas déjà joué
+    invoke<string | null>("frontmost_app").then((front) => {
+      if (!session.app || front === session.app) return;
+      hop();
+      if (!celebrate) sound.tada();
+    });
     session.failed = false;
     session.tools = 0;
+    session.files.clear();
   }
 });
 
@@ -526,6 +557,7 @@ function ask(question: string) {
   asking = { id: crypto.randomUUID(), session, raw: "" };
   clearInterval(typeTimer);
   clearTimeout(bubbleTimer);
+  delete bubble.dataset.app;
   bubbleTag.hidden = !session || count() < 2;
   if (session) {
     bubbleTag.textContent = label(session);

@@ -7,6 +7,8 @@ export type Session = {
   busy: boolean; // un outil est en cours depuis son dernier Stop
   tools: number; // outils utilisés pendant le tour en cours
   failed: boolean; // un outil a échoué pendant le tour en cours
+  files: Set<string>; // fichiers modifiés (Edit/Write…) pendant le tour en cours
+  app: string | null; // app au premier plan quand l'utilisateur a envoyé son dernier prompt : le terminal de cette session
 };
 
 const sessions = new Map<string, Session>();
@@ -18,7 +20,7 @@ export const ignored = new Set<string>();
 export function touch(id: string, cwd?: string | null): Session {
   let s = sessions.get(id);
   if (!s) {
-    s = { id, cwd: cwd ?? "", order: ++counter, lastSeen: 0, busy: false, tools: 0, failed: false };
+    s = { id, cwd: cwd ?? "", order: ++counter, lastSeen: 0, busy: false, tools: 0, failed: false, files: new Set(), app: null };
     sessions.set(id, s);
   }
   if (cwd) s.cwd = cwd;
@@ -61,3 +63,6 @@ export function releaseStale(maxMs: number) {
 export function prune(maxAgeMs: number) {
   for (const s of all()) if (!s.busy && Date.now() - s.lastSeen > maxAgeMs) sessions.delete(s.id);
 }
+
+// « 3 fichiers modifiés » pour la bulle de fin de tâche ; vide s'il n'y en a pas.
+export const editSummary = (n: number) => (n === 0 ? "" : n === 1 ? "1 fichier modifié" : `${n} fichiers modifiés`);

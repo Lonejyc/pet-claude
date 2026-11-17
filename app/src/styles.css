@@ -51,6 +51,9 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
 /* écrasé tant qu'on appuie, puis rebond de balle au relâchement */
 #pet.pressed .squash { transform: scale(1.1, 0.8); }
 #pet.boing .squash { animation: boing 0.5s ease-out; }
+#pet.hop .squash { animation: hop 0.6s ease-out; }
+@keyframes hop { 0% { transform: scale(1.1, 0.85); } 30% { transform: translateY(-26px) scale(0.95, 1.08); } 60% { transform: scale(1.08, 0.88); } 100% { transform: none; } }
+#bubble[data-app] { cursor: pointer; }
 @keyframes boing { 0% { transform: scale(1.1, 0.8); } 35% { transform: scale(0.95, 1.08); } 65% { transform: scale(1.02, 0.98); } 100% { transform: none; } }
 .eyes-squint, .mouth { display: none; }
 /* yeux plissés > < : seulement quand il est inquiet ou qu'on le déplace */

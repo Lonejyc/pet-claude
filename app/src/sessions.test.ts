@@ -53,3 +53,17 @@ describe("sessions", () => {
     expect(sessions.releaseStale(10 * 60_000)).toBe(false);
   });
 });
+
+describe("editSummary", () => {
+  it("décrit le nombre de fichiers modifiés", () => {
+    expect(sessions.editSummary(0)).toBe("");
+    expect(sessions.editSummary(1)).toBe("1 fichier modifié");
+    expect(sessions.editSummary(4)).toBe("4 fichiers modifiés");
+  });
+
+  it("un Set dédoublonne le même fichier modifié plusieurs fois", () => {
+    const s = sessions.touch("a");
+    for (const f of ["/a.ts", "/b.ts", "/a.ts"]) s.files.add(f);
+    expect(sessions.editSummary(s.files.size)).toBe("2 fichiers modifiés");
+  });
+});

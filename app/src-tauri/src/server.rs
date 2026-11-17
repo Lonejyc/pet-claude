@@ -57,9 +57,12 @@ pub fn listen(app: tauri::AppHandle) {
             let mut body = String::new();
             let _ = req.as_reader().take(MAX_BODY as u64).read_to_string(&mut body);
             let v: serde_json::Value = serde_json::from_str(&body).unwrap_or_default();
+            // fichier visé par l'outil (Edit, Write, NotebookEdit) : sert à compter les fichiers modifiés pendant un tour
+            let input = &v["tool_input"];
+            let file = if input["file_path"].is_string() { &input["file_path"] } else { &input["notebook_path"] };
             let _ = app.emit(
                 "hook",
-                serde_json::json!({ "event": event, "session": v["session_id"], "cwd": v["cwd"], "tool": v["tool_name"], "message": v["last_assistant_message"] }),
+                serde_json::json!({ "event": event, "session": v["session_id"], "cwd": v["cwd"], "tool": v["tool_name"], "file": file, "message": v["last_assistant_message"] }),
             );
             let _ = req.respond(tiny_http::Response::empty(200));
         }

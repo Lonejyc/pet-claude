@@ -107,7 +107,9 @@ multi-couches, micro-variations aléatoires, courte réverb, mastering (compress
 
 ### Phase 2 — Contrôleur périphérique
 
-- [ ] **T05 — Notification de fin de tâche + focus terminal** dep: T01
+- [?] **T05 — Notification de fin de tâche + focus terminal** dep: T01
+  *Fait (commit `feat(T05)`)* : hook `file` (Rust) ; `session.files` + `editSummary` (testés) ; commandes natives `frontmost_app` (NSWorkspace) et `focus_app` (`open -b`, bundle id validé, testé) ; terminal = app active au `UserPromptSubmit` ; à `Stop`, si l'app active a changé : saut (`.hop`) + `tada` (sauf si les confettis l'ont joué) ; bulle « … · N fichiers modifiés », cliquable pour refocaliser. Vérifié en vrai : les événements simulés répondent 200, binaire recompilé. **Non vérifié visuellement** : la capture d'écran ne montrait pas le pet (masqué ou hors écran ?), donc ni le saut, ni la bulle, ni le clic n'ont été vus.
+  *À valider par l'humain* : lancer un tour dans iTerm, passer sur une autre app avant la fin → le pet saute, la bulle affiche « N fichiers modifiés », un clic sur la bulle revient à iTerm. Fonctionne par app, pas par onglet (limite assumée).
   Sur `Stop` : saut + son `tada`/alerte, micro-résumé dans la bulle (déjà : première phrase de
   `last_assistant_message`) enrichi de « N fichiers modifiés » (compter les `PreToolUse` Edit/Write de la session).
   Clic sur la bulle → focus de la fenêtre/onglet du terminal via le `cwd` de la session (commande Rust, `open`/
