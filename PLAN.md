@@ -78,7 +78,9 @@ Diagnostic : un oscillateur + une rampe exponentielle = timbre « bip 8-bit » i
 variation, aucun bruit, aucune pièce. Pistes : bruit filtré, FM/harmoniques inharmoniques, attaque/déclin
 multi-couches, micro-variations aléatoires, courte réverb, mastering (compresseur doux).
 
-- [ ] **T02 — Moteur audio** dep: T00
+- [?] **T02 — Moteur audio** dep: T00
+  *Fait (commit `feat(T02)`)* : `audio-math.ts` (+ tests) et moteur dans `sound.ts` : bus master, réverb de pièce (convolver), bruit rose, `voice`/`noiseHit`, humanisation, variantes sans répétition. Pas de compresseur : celui de Chrome écrasait les sons faibles ~4x (mesuré). Niveaux mesurés hors ligne = ceux de l'ancien moteur, 10 sons finis, non silencieux, pics < 0,15.
+  *À valider par l'humain* : écouter `key` (clac + 3 hauteurs) et `tada` (avec réverb) dans l'app ; vérifier l'absence de clics.
   Refondre le cœur de `sound.ts` : bus master (`DynamicsCompressor` + `GainNode` volume), buffer de bruit blanc/rose
   partagé, helpers `noiseHit(filtre, durée, enveloppe)` et `layer([...])`, réverb de pièce courte (`ConvolverNode`
   avec impulsion générée une fois), humanisation (détune ±, vitesse/volume aléatoires, round-robin pour ne jamais
