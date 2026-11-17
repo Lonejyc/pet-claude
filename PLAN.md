@@ -140,7 +140,11 @@ multi-couches, micro-variations aléatoires, courte réverb, mastering (compress
   Fait apparaître le chat même pet caché/autre écran ; réglage pour désactiver/changer le raccourci.
   *Accept.* : fonctionne pet caché, écran secondaire, plein écran d'une autre app ; pas de conflit détecté ; `Échap` ferme.
 
-- [ ] **T08 — Glisser-déposer sur le pet (capture, log, URL)** dep: T00
+- [?] **T08 — Glisser-déposer sur le pet (capture, log)** dep: T00
+  *Fait (commit `feat(T08)`)* : `attachment.ts` (classification image/texte, refus dossier / type inconnu / trop gros / plusieurs fichiers, question par défaut ; testé) ; `file_size` (Rust, testé) ; `ask` accepte `attach` (chemin lu avec `Read`, `--add-dir` sur son dossier ; sans session, seul `Read` est ouvert) ; la fenêtre redevient réceptive quand un glisser arrive sur le pet (`update_click_through`) ; puce 📎 dans le chat, pet qui s'illumine au survol. **Vérifié visuellement** dans Chrome headless avec un faux Tauri (survol, dépôt, puce, envoi avec le bon chemin, refus `.exe` et dossier avec bulle explicative).
+  **Écart** : les URL ne sont pas prises en charge (le `drag-drop` de Tauri ne transmet que des chemins de fichiers ; l'API HTML5 est exclusive avec lui).
+  **Non vérifié en vrai** : un glisser depuis le Finder jusqu'à la vraie fenêtre non activante (le changement de click-through est la partie risquée) et la réponse réelle de Claude sur l'image.
+  *À valider par l'humain* : glisser un PNG du Bureau sur le pet : il s'illumine, le chat s'ouvre avec 📎, Entrée → Claude décrit l'image ; vérifier aussi que glisser le pet lui-même et sélectionner du texte dans une autre app passé près du pet fonctionnent comme avant.
   Activer le drag & drop de fichiers de la fenêtre (Tauri `drag-drop`), ouvrir le mini-chat avec la pièce jointe :
   chemin passé à `claude -p` (le fork a `Read` : fichiers/images OK), URL passée en texte. Refuser > N Mo et
   types inconnus ; nécessite la hit-region du pet pendant le drag (click-through, `native.rs`).

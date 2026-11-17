@@ -15,6 +15,9 @@ const NO_SESSION: &str = "Ici, aucune session Claude Code n'est ouverte et tu n'
 Si la question porte sur des fichiers, du code ou un dossier précis, réponds poliment qu'il faut d'abord ouvrir Claude Code \
 dans un terminal, dans ce dossier. Sinon, réponds normalement.";
 
+/// Sans session mais avec un fichier déposé sur le pet : seul ce fichier est lisible.
+const ATTACHMENT_ONLY: &str = "Un fichier joint t'est fourni : lis-le avec Read pour répondre, mais n'en lis aucun autre.";
+
 /// Une app lancée depuis le Finder n'a pas le PATH du terminal : on demande son chemin au shell de connexion (une seule fois).
 fn claude_path() -> &'static str {
     static PATH: OnceLock<String> = OnceLock::new();
@@ -44,16 +47,23 @@ fn remove_fork_files(fork: &str) {
 }
 
 #[tauri::command]
-pub fn ask(app: tauri::AppHandle, id: String, question: String, resume: Option<String>, cwd: Option<String>, fork: String) {
+pub fn ask(app: tauri::AppHandle, id: String, question: String, resume: Option<String>, cwd: Option<String>, fork: String, attach: Option<String>) {
     std::thread::spawn(move || {
         let emit = |kind: &str, text: &str| {
             let _ = app.emit("chat", serde_json::json!({ "id": id, "kind": kind, "text": text }));
         };
         // une question qui commencerait par "-" serait prise pour une option
         let question = if question.starts_with('-') { format!("Question : {question}") } else { question };
-        let (tools, persona) = match &resume {
-            Some(_) => ("Read,Grep,Glob", PERSONA.to_string()),
-            None => ("", format!("{PERSONA} {NO_SESSION}")), // "" : aucun outil
+        let attach = attach.filter(|p| Path::new(p).is_absolute() && Path::new(p).is_file());
+        let (tools, persona) = match (&resume, &attach) {
+            (Some(_), _) => ("Read,Grep,Glob", PERSONA.to_string()),
+            (None, Some(_)) => ("Read", format!("{PERSONA} {ATTACHMENT_ONLY}")),
+            (None, None) => ("", format!("{PERSONA} {NO_SESSION}")), // "" : aucun outil
+        };
+        // pièce jointe déposée sur le pet : son chemin est donné à Claude, qui la lit avec Read ; son dossier est rendu lisible pour cette seule requête
+        let question = match &attach {
+            Some(path) => format!("{question}\n\nFichier joint : {path}"),
+            None => question,
         };
         let mut cmd = Command::new(claude_path());
         // la question doit venir juste après -p : --tools accepte plusieurs valeurs et avalerait un argument positionnel placé après
@@ -61,6 +71,9 @@ pub fn ask(app: tauri::AppHandle, id: String, question: String, resume: Option<S
             .args(["--tools", tools, "--append-system-prompt", &persona, "--session-id", &fork]);
         if let Some(session) = &resume {
             cmd.args(["--resume", session, "--fork-session"]);
+        }
+        if let Some(dir) = attach.as_deref().and_then(|p| Path::new(p).parent()) {
+            cmd.arg("--add-dir").arg(dir);
         }
         if let Some(dir) = cwd.filter(|d| Path::new(d).is_dir()) {
             cmd.current_dir(dir);

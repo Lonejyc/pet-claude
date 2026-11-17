@@ -58,6 +58,12 @@ pub fn frontmost_app() -> Option<String> {
     Some(app.bundleIdentifier()?.to_string())
 }
 
+/// Taille d'un fichier ordinaire (None pour un dossier ou un chemin introuvable) : le front refuse les pièces jointes trop lourdes.
+#[tauri::command]
+pub fn file_size(path: String) -> Option<u64> {
+    std::fs::metadata(path).ok().filter(|m| m.is_file()).map(|m| m.len())
+}
+
 /// Un bundle id ne contient que lettres, chiffres, points et tirets : on refuse tout le reste avant de le passer à `open`.
 fn valid_bundle_id(id: &str) -> bool {
     !id.is_empty() && !id.starts_with('-') && id.len() < 200 && id.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-')
@@ -181,14 +187,17 @@ pub fn toggle_pet(window: &WebviewWindow) -> bool {
 /// Une fenêtre transparente intercepte les clics sur toute sa surface : on la rend "traversante" tant que la souris n'est
 /// pas sur une zone cliquable. Pendant un clic ou un glisser (bouton enfoncé), on ne change rien pour ne pas lâcher le pet.
 fn update_click_through(window: &WebviewWindow) {
-    if NSEvent::pressedMouseButtons() != 0 {
-        return;
-    }
+    let pressed = NSEvent::pressedMouseButtons() != 0;
     let w = ns_window(window);
     let f = w.frame();
     let m = NSEvent::mouseLocation();
     let (x, y) = (m.x - f.origin.x, f.size.height - (m.y - f.origin.y));
     let over = HIT_REGIONS.lock().unwrap().iter().any(|[rx, ry, rw, rh]| x >= *rx && x <= rx + rw && y >= *ry && y <= ry + rh);
+    // Bouton enfoncé : on ne rend jamais la fenêtre traversante (sinon le pet qu'on glisse serait lâché), mais on la rend
+    // réceptive si le pointeur arrive sur le pet, pour qu'un fichier glissé depuis le Finder puisse y être déposé.
+    if pressed && !over {
+        return;
+    }
     if w.ignoresMouseEvents() == over {
         w.setIgnoresMouseEvents(!over);
     }
@@ -226,7 +235,7 @@ pub fn pointer_loop(window: WebviewWindow) {
 
 #[cfg(test)]
 mod tests {
-    use super::{center_on, valid_bundle_id, Rect};
+    use super::{center_on, file_size, valid_bundle_id, Rect};
 
     fn rect(x: f64, y: f64, w: f64, h: f64) -> Rect {
         Rect { x, y, w, h }
@@ -244,6 +253,18 @@ mod tests {
         let screens = [rect(0.0, 0.0, 1000.0, 600.0)];
         assert_eq!(center_on(&screens, (-50.0, 9999.0), 200.0, 100.0), Some((400.0, 250.0)));
         assert_eq!(center_on(&[], (0.0, 0.0), 200.0, 100.0), None);
+    }
+
+    #[test]
+    fn file_size_only_answers_for_regular_files() {
+        let dir = std::env::temp_dir().join(format!("pet-size-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let f = dir.join("a.log");
+        std::fs::write(&f, "abcd").unwrap();
+        assert_eq!(file_size(f.to_string_lossy().into()), Some(4));
+        assert_eq!(file_size(dir.to_string_lossy().into()), None, "un dossier n'est pas une pièce jointe");
+        assert_eq!(file_size("/nope/absent".into()), None);
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]

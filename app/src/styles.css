@@ -44,6 +44,11 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
   box-shadow: 3px 3px 0 #222; outline: none; font: 700 14px/1.35 "Chalkboard SE", "Comic Sans MS", "Bradley Hand", cursive; }
 #chat input::placeholder { color: #888; }
 /* session visée par la question : une pastille par session ouverte, la choisie est pleine */
+#chat-attach { margin-bottom: 6px; padding: 0 8px; border: 2px solid #222; border-radius: 10px; background: #fff; color: #222; cursor: pointer; text-align: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 11px/16px system-ui, sans-serif; }
+#chat-attach[hidden] { display: none; }
+/* un fichier est glissé au-dessus du pet */
+#pet.dropping .squash { transform: scale(1.1, 0.92); filter: drop-shadow(0 0 8px #fff) drop-shadow(0 0 3px #ffd34e); }
 #chat-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-bottom: 8px; }
 #chat-chips span { padding: 0 8px; border: 2px solid #222; border-radius: 10px; background: var(--tag); color: #fff; cursor: pointer;
   font: 700 10px/15px system-ui, sans-serif; opacity: 0.55; }

@@ -4,6 +4,8 @@ import { buildPet } from "./pet3d";
 import { all, anyBusy, color, count, ignored, label, editSummary, mostRecent, prune, releaseStale, remove, touch, type Session } from "./sessions";
 import { setSkin } from "./skins";
 import { toolPace } from "./audio-math";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { classifyDrop, defaultQuestion, type Attachment } from "./attachment";
 import * as perm from "./permission";
 import { setSoundConfig, setToolPitch, sound } from "./sound";
 
@@ -570,8 +572,40 @@ function renderChips() {
     }),
   );
   // les sessions déjà ouvertes n'apparaissent qu'à leur prochain hook ; sans session, le chat ne lit aucun fichier (cf. chat.rs)
-  if (!count()) chips.innerHTML = `<span class="none">Aucune session vue : question générale, ou ouvre Claude Code dans ton dossier.</span>`;
+  if (!count() && !attachment) chips.innerHTML = `<span class="none">Aucune session vue : question générale, ou ouvre Claude Code dans ton dossier.</span>`;
 }
+
+// Pièce jointe déposée sur le pet : une puce « 📎 nom ✕ » au-dessus du champ ; un clic la retire.
+let attachment: Attachment | null = null;
+const attachChip = document.querySelector<HTMLElement>("#chat-attach")!;
+function renderAttach() {
+  attachChip.hidden = !attachment;
+  if (attachment) attachChip.textContent = `📎 ${attachment.name}  ✕`;
+  chatInput.placeholder = attachment ? "Ta question sur ce fichier ?" : "Pose-moi une question…";
+}
+attachChip.addEventListener("mousedown", (e) => e.preventDefault()); // ne pas perdre le focus, sinon le chat se ferme
+attachChip.addEventListener("click", () => {
+  attachment = null;
+  renderAttach();
+});
+
+// Fichier déposé sur le pet (cf. native.rs : la fenêtre redevient réceptive quand un glisser arrive sur le pet).
+getCurrentWebview().onDragDropEvent(async ({ payload }) => {
+  if (payload.type === "enter" || payload.type === "over") return pet.classList.add("dropping");
+  pet.classList.remove("dropping");
+  if (payload.type !== "drop") return;
+  const size = payload.paths.length === 1 ? await invoke<number | null>("file_size", { path: payload.paths[0] }) : null;
+  const verdict = classifyDrop(payload.paths, size);
+  if (!verdict.ok) {
+    say(verdict.reason);
+    setState("worried", 2500);
+    return;
+  }
+  wake();
+  attachment = verdict.attachment;
+  await openChat();
+  renderAttach();
+});
 
 async function openChat() {
   if (chatOpen) return;
@@ -582,6 +616,7 @@ async function openChat() {
   target = mostRecent();
   renderChips();
   chat.hidden = false;
+  renderAttach();
   await invoke("set_chat_open", { open: true });
   chatInput.focus();
 }
@@ -589,6 +624,7 @@ async function openChat() {
 function closeChat() {
   if (!chatOpen) return;
   chatOpen = false;
+  attachment = null;
   chat.hidden = true;
   invoke("set_chat_open", { open: false });
 }
@@ -608,7 +644,7 @@ function showAnswer(text: string) {
   bubble.hidden = false;
 }
 
-function ask(question: string) {
+function ask(question: string, att: Attachment | null = null) {
   const fork = crypto.randomUUID();
   ignored.add(fork); // les hooks de la copie ne sont pas de vraies sessions
   const session = target;
@@ -624,7 +660,7 @@ function ask(question: string) {
   showAnswer("…");
   setState("working");
   lastSpokeAt = Date.now();
-  invoke("ask", { id: asking.id, question, resume: session?.id ?? null, cwd: session?.cwd || null, fork });
+  invoke("ask", { id: asking.id, question, resume: session?.id ?? null, cwd: session?.cwd || null, fork, attach: att?.path ?? null });
 }
 
 listen<{ id: string; kind: "delta" | "done" | "error"; text: string }>("chat", ({ payload }) => {
@@ -657,13 +693,14 @@ chatInput.addEventListener("keydown", (e) => {
     if (list.length) target = list[(list.indexOf(target as Session) + 1) % list.length];
     renderChips();
   }
-  if (e.key === "Enter" && !e.isComposing && chatInput.value.trim() && !asking) {
-    const question = chatInput.value.trim();
+  if (e.key === "Enter" && !e.isComposing && (chatInput.value.trim() || attachment) && !asking) {
+    const att = attachment;
+    const question = chatInput.value.trim() || (att ? defaultQuestion(att) : "");
     closeChat();
     if (question === "/quit") invoke("quit");
     else if (question === "/settings") invoke("open_settings_cmd");
     else if (question.startsWith("/emote")) emote(question.split(/\s+/)[1]);
-    else ask(question);
+    else ask(question, att);
   }
 });
 // clic sur une pastille : ne pas perdre le focus, sinon le chat se ferme
