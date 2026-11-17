@@ -36,6 +36,8 @@ s'inquiète quand une commande échoue, et te répond dans une bulle.</p>
   du code, un bouton « Copier le code » le met dans le presse-papiers.
 - **Sent l'état du projet** : une goutte de sueur quand plus de 500 lignes ne sont pas commitées (mesuré avec `git diff --shortstat`, rien n'est modifié ni envoyé),
   et il tremble plus fort quand la même commande échoue 3 fois de suite.
+- **Fête les bons moments** : confettis après un `git commit` réussi ; petit saut et ta-da quand un test ou un build repasse au vert après un échec.
+  Il reconnaît ces commandes dans ce que Claude exécute (Bash) ; rien n'est envoyé ni enregistré.
 - **Vit** : il cligne des yeux, s'endort, se laisse prendre (il panique), se lance et rebondit sur les bords de l'écran.
 - Visible **au-dessus des apps en plein écran**, sur tous les espaces, multi-écrans.
 

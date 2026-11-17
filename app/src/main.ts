@@ -4,6 +4,7 @@ import { buildPet } from "./pet3d";
 import { all, anyBusy, color, count, ignored, label, attentionTarget, cycle, editSummary, mostRecent, quickActions, prune, releaseStale, remove, touch, type Session } from "./sessions";
 import { setSkin } from "./skins";
 import { toolPace } from "./audio-math";
+import { checkKind, isCommit } from "./celebrate";
 import * as history from "./history";
 import { fail, isHeavy, isNervous, streakKey, succeed } from "./nervous";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
@@ -213,6 +214,16 @@ function refreshDiff(session: Session) {
   });
 }
 
+// Moments à fêter : commit réussi (confettis), test ou build qui repasse au vert (saut + ta-da).
+let lastCelebrationAt = 0;
+function celebrateNow(big: boolean) {
+  lastCelebrationAt = Date.now();
+  wake();
+  hop();
+  if (big && CONFETTI) confetti();
+  else sound.tada();
+}
+
 let viewed: Session | undefined;
 function renderAttention() {
   const s = count() >= 2 ? attentionTarget(perm.pendingSessions()) : undefined;
@@ -266,6 +277,19 @@ listen<Hook>("hook", ({ payload }) => {
     clearInterval(typingTimer);
     session.streak = succeed(session.streak, streakKey(payload.tool, payload.command));
     if (payload.tool && TOOL_KINDS[payload.tool] === "edit") refreshDiff(session);
+    if (payload.tool === "Bash" && payload.command) {
+      if (isCommit(payload.command)) {
+        session.diffAt = 0; // le diff vient de changer : remesure au prochain outil
+        refreshDiff(session);
+        celebrateNow(true);
+      } else {
+        const kind = checkKind(payload.command);
+        if (kind && session.red === kind) {
+          session.red = null;
+          celebrateNow(false); // test ou build repassé au vert
+        }
+      }
+    }
   }
   if (payload.event === "PreToolUse") {
     const gap = lastToolAt ? Date.now() - lastToolAt : undefined;
@@ -289,6 +313,7 @@ listen<Hook>("hook", ({ payload }) => {
     session.attention = true;
     session.last = "error";
     session.streak = fail(session.streak, streakKey(payload.tool, payload.command));
+    if (payload.tool === "Bash" && payload.command) session.red = checkKind(payload.command) ?? session.red;
     // même commande qui échoue en boucle : le pet n'en peut plus (tremble plus longtemps et plus vite)
     const nervous = isNervous(session.streak);
     setState("worried", nervous ? 6000 : 2500, "working");
@@ -305,7 +330,7 @@ listen<Hook>("hook", ({ payload }) => {
     if (payload.message && (session.failed || Date.now() - lastSpokeAt > COOLDOWN_MS)) say(payload.message, session, editSummary(session.files.size));
     else settle();
     session.last = session.failed ? "error" : "done";
-    const celebrate = CONFETTI && session.tools >= CONFETTI_MIN_TOOLS && !session.failed;
+    const celebrate = CONFETTI && session.tools >= CONFETTI_MIN_TOOLS && !session.failed && Date.now() - lastCelebrationAt > 5000;
     if (celebrate) confetti();
     // l'utilisateur est ailleurs (Slack, navigateur…) : le pet saute, avec le ta-da si les confettis ne l'ont pas déjà joué
     invoke<string | null>("frontmost_app").then((front) => {

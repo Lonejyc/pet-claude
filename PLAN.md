@@ -180,7 +180,8 @@ multi-couches, micro-variations aléatoires, courte réverb, mastering (compress
   même commande → « nerveux ». Seuils en constantes. *Accept.* : tests du parsing shortstat et du compteur d'échecs ;
   rendu des deux animations validé visuellement.
 
-- [ ] **T13 — Célébration : commit réussi, tests/build qui repassent au vert** dep: T12
+- [x] **T13 — Célébration : commit réussi, tests/build qui repassent au vert** dep: T12 (commit `feat(T13)`)
+  `celebrate.ts` (`isCommit` : chaînes `&&`, `git -C`, pas de `--dry-run`, ni `commit-tree`, ni texte cité ; `checkKind` test/build ; 5 tests) ; `session.red` mémorise le genre du dernier échec, le succès du même genre se fête (saut + ta-da), un commit réussi lance les confettis (`hop` si les confettis sont coupés) ; pas de double confettis avec ceux de `Stop` (5 s). **Vérifié** dans Chrome headless (faux Tauri) : test qui repasse au vert, build sans échec préalable ignoré, `--dry-run` ignoré, commit réussi (24 confettis), commit en échec ignoré.
   Détecter `git commit` dans `PreToolUse` Bash puis `PostToolUse` OK ; commande test/build qui échoue puis réussit.
   Animation + son dédiés (réutilise confetti/`tada`). *Accept.* : tests de la machine à états ; pas de faux positifs
   sur `git commit --amend --dry-run`, etc.
