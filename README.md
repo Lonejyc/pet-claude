@@ -76,7 +76,7 @@ Dans **Réglages** : couleur et accessoire du pet (Apparence), et un mode « emo
 - `/Applications/pet-claude.app`
 - Lecture seule : l'item « Claude Code-credentials » du Keychain (via `/usr/bin/security`, token envoyé uniquement à `api.anthropic.com`
   pour les limites du forfait), `~/.claude.json` (cache d'usage) et les transcripts `~/.claude/projects/**/*.jsonl` (coût estimé).
-- `~/.claude/settings.json` : cinq hooks (`curl` vers `localhost:4242`) **ajoutés à côté des tiens**, sauvegarde dans
+- `~/.claude/settings.json` : huit hooks (`curl` vers `localhost:4242`) **ajoutés à côté des tiens**, sauvegarde dans
   `settings.json.bak-pet-claude`. Si tu coches la personnalité : `outputStyle: "Pet"` et `~/.claude/output-styles/pet.md`.
 - `~/Library/LaunchAgents/io.github.lonejyc.pet-claude.plist` (lancement au démarrage, optionnel)
 - `~/Library/Application Support/io.github.lonejyc.pet-claude/` : tes réglages (`settings.json`) et le secret du pet (`token`, lisible par toi seul)

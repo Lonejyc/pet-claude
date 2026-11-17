@@ -81,6 +81,9 @@ mod tests {
     fn a_valid_hook_is_accepted() {
         assert_eq!(check(true, OK_HOST, Some(SECRET), Some(1200), "Stop"), Ok(()));
         assert_eq!(check(true, Some("127.0.0.1:4242"), Some(SECRET), None, "PreToolUse"), Ok(()));
+        for event in ["PostToolUse", "UserPromptSubmit", "Notification"] {
+            assert_eq!(check(true, OK_HOST, Some(SECRET), None, event), Ok(()), "{event}");
+        }
     }
 
     #[test]

@@ -21,7 +21,7 @@ Hooks écoutés : `EVENTS` dans `setup.rs:9` (5 événements). Settings dupliqu�
 Lancement : `/loop Exécute le protocole de PLAN.md (une tâche par itération)` — sans intervalle (auto-rythmé).
 
 1. **Branche** : travailler sur `feat/roadmap` (la créer depuis `main` si absente). Ne jamais committer sur `main`.
-2. **Choisir** la première tâche `[ ]` dont toutes les dépendances (`dep:`) sont `[x]`. La passer à `[~]`.
+2. **Choisir** la première tâche `[ ]` dont toutes les dépendances (`dep:`) sont `[x]` ou `[?]` (`[?]` = code vérifié par les tests, seule la perception humaine reste à valider). La passer à `[~]`.
    Aucune tâche éligible → s'arrêter (`ScheduleWakeup stop`) et résumer.
 3. **Cadrer** : relire les fichiers cités, énoncer hypothèses et critères de succès. Doute bloquant →
    passer la tâche à `[!]` avec la raison, ne pas inventer, passer à la suivante.
@@ -61,7 +61,9 @@ Légende : `[ ]` à faire · `[~]` en cours · `[x]` terminé et vérifié · `[
   `.github/workflows/ci.yml`. Un premier test sur `sessions.ts` (`touch`/`prune`/`color`).
   *Accept.* : `npm test`, `cargo clippy -- -D warnings`, CI mise à jour. *Fichiers* : `app/package.json`, `ci.yml`.
 
-- [ ] **T01 — Événements de hooks étendus + correctif BUG.md n°1 et n°2**  dep: T00
+- [?] **T01 — Événements de hooks étendus + correctif BUG.md n°1 et n°2**  dep: T00
+  *Fait (commit `feat(T01)`)* : tests auto verts, 3 hooks reçus en vrai (200) et migration des `settings.json` constatée.
+  *À valider par l'humain* : (1) lancer Bash dans Claude Code → le clavier s'arrête dès que la commande finit ; (2) Échap pendant un outil → le pet se rendort après ~10 min sans activité (ou aussitôt qu'un nouveau prompt est envoyé : il passe « au travail » proprement).
   Ajouter `PostToolUse`, `UserPromptSubmit`, `Notification` à `EVENTS` (`setup.rs:9`, taille du tableau) et au
   routage `server.rs` ; l'événement Tauri `hook` transporte déjà `{event, session, cwd, tool, message}`.
   `main.ts:111-145` : `PostToolUse` coupe le clavier (BUG n°2) ; `UserPromptSubmit` remet `busy=false` puis `true`

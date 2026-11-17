@@ -1,7 +1,7 @@
 import { emit, listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { buildPet } from "./pet3d";
-import { all, anyBusy, color, count, ignored, label, mostRecent, prune, remove, touch, type Session } from "./sessions";
+import { all, anyBusy, color, count, ignored, label, mostRecent, prune, releaseStale, remove, touch, type Session } from "./sessions";
 import { setSkin } from "./skins";
 import { setSoundConfig, sound } from "./sound";
 
@@ -117,6 +117,15 @@ listen<Hook>("hook", ({ payload }) => {
     return;
   }
   const session = touch(id, payload.cwd);
+  // Nouveau prompt = nouveau tour : repart de zéro même si le précédent a été interrompu (Échap) sans Stop.
+  if (payload.event === "UserPromptSubmit") {
+    session.busy = true;
+    session.tools = 0;
+    session.failed = false;
+    setState("working");
+  }
+  // Fin d'un outil : le clavier se tait, même si Claude continue à rédiger.
+  if (payload.event === "PostToolUse") clearInterval(typingTimer);
   if (payload.event === "PreToolUse") {
     session.busy = true;
     session.tools++;
@@ -374,7 +383,9 @@ function wake() {
 
 // Le menu de la barre de menus (côté Rust) affiche le nombre de sessions : on le lui envoie quand il change.
 let sentSessions = -1;
+const BUSY_MAX_MS = 10 * 60_000; // sans aucun hook depuis ce délai, une session « occupée » est considérée libre (interruption par Échap)
 setInterval(() => {
+  if (releaseStale(BUSY_MAX_MS) && pet.dataset.state === "working") settle();
   prune(6 * 3600_000);
   if (count() !== sentSessions) emit("sessions", (sentSessions = count()));
   if (pet.dataset.state === "idle" && Date.now() - lastActivity > SLEEP_AFTER_MS) {

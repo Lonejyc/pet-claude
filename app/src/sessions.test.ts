@@ -39,4 +39,17 @@ describe("sessions", () => {
     expect(sessions.all().map((s) => s.id)).toEqual(["busy"]);
     expect(idle.busy).toBe(false);
   });
+
+  it("releaseStale libère une session occupée silencieuse (interruption Échap)", () => {
+    const s = sessions.touch("a");
+    s.busy = true;
+    vi.advanceTimersByTime(9 * 60_000);
+    expect(sessions.releaseStale(10 * 60_000)).toBe(false);
+    expect(s.busy).toBe(true);
+    vi.advanceTimersByTime(2 * 60_000);
+    expect(sessions.releaseStale(10 * 60_000)).toBe(true);
+    expect(s.busy).toBe(false);
+    expect(sessions.anyBusy()).toBe(false);
+    expect(sessions.releaseStale(10 * 60_000)).toBe(false);
+  });
 });

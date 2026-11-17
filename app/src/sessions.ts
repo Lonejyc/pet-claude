@@ -44,6 +44,19 @@ export function label(s: Session) {
   return same.length > 1 ? `${name} ·${same.indexOf(s) + 1}` : name;
 }
 
+// Claude Code n'envoie pas Stop quand on l'interrompt (Échap) : une session « occupée » sans aucun hook depuis maxMs est considérée libre.
+// ponytail: un outil de plus de 10 min sans aucun hook (gros build) sera lâché trop tôt ; la session redevient occupée au hook suivant.
+export function releaseStale(maxMs: number) {
+  let released = false;
+  for (const s of all()) {
+    if (s.busy && Date.now() - s.lastSeen > maxMs) {
+      s.busy = false;
+      released = true;
+    }
+  }
+  return released;
+}
+
 // Une session qui n'a pas envoyé SessionEnd (terminal fermé brutalement) ne doit pas rester à vie.
 export function prune(maxAgeMs: number) {
   for (const s of all()) if (!s.busy && Date.now() - s.lastSeen > maxAgeMs) sessions.delete(s.id);

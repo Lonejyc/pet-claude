@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 
 pub const IDENTIFIER: &str = "io.github.lonejyc.pet-claude";
 const LEGACY_IDENTIFIER: &str = "fr.perso.petclaude"; // identifiant des betas 1 et 2, migré au démarrage
-pub const EVENTS: [&str; 5] = ["SessionStart", "SessionEnd", "PreToolUse", "PostToolUseFailure", "Stop"];
+pub const EVENTS: [&str; 8] = ["SessionStart", "SessionEnd", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "Notification", "Stop"];
 const STYLE_MD: &str = include_str!("../../../.claude/output-styles/pet.md");
 
 fn real_home() -> PathBuf {
@@ -314,7 +314,7 @@ mod tests {
     }
 
     #[test]
-    fn install_on_missing_file_creates_the_five_hooks() {
+    fn install_on_missing_file_creates_all_the_hooks() {
         let home = temp_home("missing");
         std::fs::remove_dir_all(home.join(".claude")).unwrap();
         set_hooks_in(&home, TOKEN, true).unwrap();
@@ -322,6 +322,21 @@ mod tests {
         for ev in EVENTS {
             assert_eq!(count_ours(&s, ev), 1, "{ev}");
         }
+        assert!(hooks_installed_in(&home, TOKEN));
+    }
+
+    #[test]
+    fn hooks_installed_by_an_older_version_are_detected_as_outdated() {
+        let home = temp_home("older");
+        let old: Vec<_> = ["SessionStart", "SessionEnd", "PreToolUse", "PostToolUseFailure", "Stop"].into();
+        let hooks: Map<String, Value> = old
+            .iter()
+            .map(|ev| (ev.to_string(), json!([{ "hooks": [{ "type": "command", "command": hook_command(ev, TOKEN) }] }])))
+            .collect();
+        write_claude(&home, &json!({ "hooks": hooks }));
+        // refresh_hooks_if_outdated agit exactement sur ce couple de conditions
+        assert!(hooks_present_in(&home) && !hooks_installed_in(&home, TOKEN));
+        set_hooks_in(&home, TOKEN, true).unwrap();
         assert!(hooks_installed_in(&home, TOKEN));
     }
 
