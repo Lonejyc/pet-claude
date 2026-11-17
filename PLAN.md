@@ -165,7 +165,8 @@ multi-couches, micro-variations aléatoires, courte réverb, mastering (compress
 
 ### Phase 4 — Multi-session
 
-- [ ] **T11 — Indicateur d'attention + cycle entre sessions** dep: T01
+- [x] **T11 — Indicateur d'attention + cycle entre sessions** dep: T01 (commit `feat(T11)`)
+  `session.attention` (Notification, échec ; éteint au prochain prompt) + demandes de permission en attente (`pendingSessions`) → halo à la couleur de la session (≥ 2 sessions) ; `attentionTarget` et `cycle` testés ; molette (un cran = une session) et clic droit relisent le dernier message de chaque session ; le chat vise la session relue ou en attention. **Vérifié** dans Chrome headless (faux Tauri) : halo selon Notification, extinction à `UserPromptSubmit`, halo pendant une permission puis retrait après décision, molette et clic droit ; capture regardée (halo violet = pastille « blog »). J'ai aussi corrigé au passage le masquage de la carte de permission expirée.
   Le pet prend la couleur (`sessions.ts` `color`) de la session qui attend (`Notification`/erreur) ; clic droit ou
   molette cycle les sessions (la bulle suit `mostRecent` → session choisie). Garde la pastille `#bubble-tag`.
   *Accept.* : tests vitest (priorité attention > récent, cycle circulaire) ; démo 2-3 sessions via `scripts/demo.sh`.

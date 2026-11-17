@@ -48,3 +48,15 @@ describe("describeInput", () => {
     expect(perm.describeInput(null)).toBe("{}");
   });
 });
+
+describe("pendingSessions", () => {
+  it("liste les sessions qui attendent, sans doublon ni demande sans session", () => {
+    perm.push({ id: 1, session: "a", timeoutMs: 20_000 }, 0);
+    perm.push({ id: 2, session: "a", timeoutMs: 20_000 }, 0);
+    perm.push({ id: 3, timeoutMs: 20_000 }, 0);
+    expect([...perm.pendingSessions()]).toEqual(["a"]);
+    perm.resolve(1);
+    perm.resolve(2);
+    expect(perm.pendingSessions().size).toBe(0);
+  });
+});

@@ -83,3 +83,32 @@ describe("quickActions", () => {
     for (const last of ["done", "error", null] as const) for (const busy of [true, false]) expect(sessions.quickActions({ busy, last }).length).toBeLessThanOrEqual(3);
   });
 });
+
+describe("attentionTarget et cycle", () => {
+  it("choisit la session en attention la plus récente, rien si aucune", () => {
+    const a = sessions.touch("a");
+    const b = sessions.touch("b");
+    expect(sessions.attentionTarget()).toBeUndefined();
+    a.attention = true;
+    vi.advanceTimersByTime(1000);
+    b.attention = true;
+    sessions.touch("b"); // plus récente
+    expect(sessions.attentionTarget()).toBe(b);
+  });
+  it("une demande de permission en attente suffit", () => {
+    sessions.touch("a");
+    const b = sessions.touch("b");
+    expect(sessions.attentionTarget(new Set(["b"]))).toBe(b);
+  });
+  it("cycle de façon circulaire dans les deux sens", () => {
+    const a = sessions.touch("a");
+    const b = sessions.touch("b");
+    const c = sessions.touch("c");
+    expect(sessions.cycle(a, 1)).toBe(b);
+    expect(sessions.cycle(c, 1)).toBe(a);
+    expect(sessions.cycle(a, -1)).toBe(c);
+    expect(sessions.cycle(undefined, 1)).toBe(a);
+    expect(sessions.cycle(undefined, -1)).toBe(c);
+  });
+  it("cycle sans session ne renvoie rien", () => expect(sessions.cycle(undefined, 1)).toBeUndefined());
+});

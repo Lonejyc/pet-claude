@@ -60,6 +60,8 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 11px/16px system-ui, sans-serif; }
 #chat-attach[hidden] { display: none; }
 /* un fichier est glissé au-dessus du pet */
+/* une autre session réclame ton attention : halo à sa couleur (cf. renderAttention) */
+#pet[data-attn] .squash { filter: drop-shadow(0 0 2px var(--attn)) drop-shadow(0 0 8px var(--attn)); }
 #pet.dropping .squash { transform: scale(1.1, 0.92); filter: drop-shadow(0 0 8px #fff) drop-shadow(0 0 3px #ffd34e); }
 #chat-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-bottom: 8px; }
 #chat-chips span { padding: 0 8px; border: 2px solid #222; border-radius: 10px; background: var(--tag); color: #fff; cursor: pointer;

@@ -8,6 +8,8 @@ export type Session = {
   tools: number; // outils utilisés pendant le tour en cours
   failed: boolean; // un outil a échoué pendant le tour en cours
   files: Set<string>; // fichiers modifiés (Edit/Write…) pendant le tour en cours
+  attention: boolean; // Claude attend l'utilisateur (Notification) ou a échoué : le pet prend la couleur de cette session
+  said: string; // dernier message de Claude dans cette session, pour le relire en changeant de session
   last: "done" | "error" | null; // issue du dernier tour : sert aux actions rapides du mini-chat
   app: string | null; // app au premier plan quand l'utilisateur a envoyé son dernier prompt : le terminal de cette session
 };
@@ -21,7 +23,7 @@ export const ignored = new Set<string>();
 export function touch(id: string, cwd?: string | null): Session {
   let s = sessions.get(id);
   if (!s) {
-    s = { id, cwd: cwd ?? "", order: ++counter, lastSeen: 0, busy: false, tools: 0, failed: false, files: new Set(), last: null, app: null };
+    s = { id, cwd: cwd ?? "", order: ++counter, lastSeen: 0, busy: false, tools: 0, failed: false, files: new Set(), attention: false, said: "", last: null, app: null };
     sessions.set(id, s);
   }
   if (cwd) s.cwd = cwd;
@@ -75,4 +77,19 @@ export function quickActions(s?: Pick<Session, "busy" | "last">): string[] {
   if (s.last === "error") return ["Résume l'erreur en 2 lignes", "Quelle est la cause probable ?", "Que proposes-tu pour la corriger ?"];
   if (s.last === "done") return ["Explique ce que tu viens de changer", "Y a-t-il des effets de bord ?", "Que dois-je vérifier avant de commiter ?"];
   return ["Résume ce qu'on a fait dans cette session", "Quelles sont les prochaines étapes ?"];
+}
+
+// Session qui a le plus récemment besoin de l'utilisateur : Notification, échec, ou demande de permission en attente (`waiting` = ids).
+export const attentionTarget = (waiting: ReadonlySet<string> = new Set()) =>
+  all()
+    .filter((s) => s.attention || waiting.has(s.id))
+    .sort((a, b) => b.lastSeen - a.lastSeen)[0];
+
+// Session suivante (delta = 1) ou précédente (-1), circulaire, dans l'ordre d'apparition.
+export function cycle(from: Session | undefined, delta: number) {
+  const list = all();
+  if (!list.length) return undefined;
+  const i = from ? list.indexOf(from) : -1;
+  if (i < 0) return list[delta > 0 ? 0 : list.length - 1];
+  return list[(i + delta + list.length) % list.length];
 }

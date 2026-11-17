@@ -1,7 +1,7 @@
 import { emit, listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { buildPet } from "./pet3d";
-import { all, anyBusy, color, count, ignored, label, editSummary, mostRecent, quickActions, prune, releaseStale, remove, touch, type Session } from "./sessions";
+import { all, anyBusy, color, count, ignored, label, attentionTarget, cycle, editSummary, mostRecent, quickActions, prune, releaseStale, remove, touch, type Session } from "./sessions";
 import { setSkin } from "./skins";
 import { toolPace } from "./audio-math";
 import * as history from "./history";
@@ -159,6 +159,7 @@ function decidePerm(allow: boolean) {
   invoke("decide", { id: r.id, allow });
   perm.resolve(r.id);
   renderPerm();
+  renderAttention();
 }
 
 listen<{ id: number; session?: string | null; cwd?: string | null; tool?: string; input?: Record<string, unknown> | null; timeoutMs: number }>("permission", ({ payload }) => {
@@ -170,6 +171,7 @@ listen<{ id: number; session?: string | null; cwd?: string | null; tool?: string
   hop();
   sound.yelp();
   renderPerm();
+  renderAttention();
 });
 document.querySelector("#perm-allow")!.addEventListener("click", () => decidePerm(true));
 document.querySelector("#perm-deny")!.addEventListener("click", () => decidePerm(false));
@@ -179,7 +181,11 @@ document.addEventListener("keydown", (e) => {
   e.preventDefault();
   decidePerm(e.key === "Enter");
 });
-setInterval(() => (perm.expire() || perm.current()) && renderPerm(), 1000);
+setInterval(() => {
+  const changed = perm.expire();
+  if (changed) renderAttention();
+  if (changed || perm.current()) renderPerm(); // y compris pour masquer la carte d'une demande expirée
+}, 1000);
 
 // Raccourci clavier global (cf. shortcut.rs) : Rust a déjà placé le pet au centre de l'écran actif.
 listen("open-chat", () => {
@@ -190,6 +196,34 @@ listen("open-chat", () => {
 // Le pet reste "au travail" tant qu'une autre session a un outil en cours.
 const settle = () => setState(anyBusy() ? "working" : "idle");
 
+// Indicateur d'attention : avec plusieurs sessions, le pet s'entoure de la couleur de celle qui a besoin de toi.
+// Molette ou clic droit sur le pet : on feuillette les sessions, la bulle redit leur dernier message.
+let viewed: Session | undefined;
+function renderAttention() {
+  const s = count() >= 2 ? attentionTarget(perm.pendingSessions()) : undefined;
+  if (s) {
+    pet.style.setProperty("--attn", color(s));
+    pet.dataset.attn = "1";
+  } else delete pet.dataset.attn;
+}
+function cycleView(delta: number) {
+  if (count() < 2) return;
+  viewed = cycle(viewed && all().includes(viewed) ? viewed : mostRecent(), delta);
+  if (viewed) say(viewed.said || "Rien à te dire pour l'instant.", viewed);
+}
+let lastWheel = 0;
+pet.addEventListener("wheel", (e) => {
+  if (count() < 2) return;
+  e.preventDefault();
+  if (Date.now() - lastWheel < 350) return; // une molette envoie des dizaines d'événements : un cran = une session
+  lastWheel = Date.now();
+  cycleView(e.deltaY > 0 ? 1 : -1);
+}, { passive: false });
+pet.addEventListener("contextmenu", (e) => {
+  e.preventDefault();
+  cycleView(1);
+});
+
 let lastToolAt = 0; // pour l'allure des outils : écart entre deux PreToolUse, toutes sessions confondues
 listen<Hook>("hook", ({ payload }) => {
   const id = payload.session ?? "default";
@@ -197,6 +231,7 @@ listen<Hook>("hook", ({ payload }) => {
   if (payload.event === "SessionEnd") {
     remove(id);
     if (pet.dataset.state === "working") settle();
+    renderAttention();
     return;
   }
   const session = touch(id, payload.cwd);
@@ -205,6 +240,7 @@ listen<Hook>("hook", ({ payload }) => {
     session.busy = true;
     session.tools = 0;
     session.failed = false;
+    session.attention = false;
     session.files.clear();
     // l'app active à cet instant est le terminal où l'utilisateur vient de taper son prompt
     invoke<string | null>("frontmost_app").then((app) => app && (session.app = app));
@@ -231,12 +267,18 @@ listen<Hook>("hook", ({ payload }) => {
   // Claude continue en général après un échec : retour au travail, c'est Stop qui calmera le pet.
   if (payload.event === "PostToolUseFailure") {
     session.failed = true;
+    session.attention = true;
     session.last = "error";
     setState("worried", 2500, "working");
     sound.worried();
   }
+  // Claude attend l'utilisateur (permission, question…) : cette session réclame de l'attention jusqu'au prochain prompt.
+  if (payload.event === "Notification") session.attention = true;
   if (payload.event === "Stop") {
     session.busy = false;
+    session.attention = session.failed; // un tour en erreur garde l'attention
+    viewed = undefined; // un nouveau message prend la main sur la session relue à la molette
+    if (payload.message) session.said = payload.message;
     if (payload.message && (session.failed || Date.now() - lastSpokeAt > COOLDOWN_MS)) say(payload.message, session, editSummary(session.files.size));
     else settle();
     session.last = session.failed ? "error" : "done";
@@ -252,6 +294,7 @@ listen<Hook>("hook", ({ payload }) => {
     session.tools = 0;
     session.files.clear();
   }
+  renderAttention();
 });
 
 
@@ -643,7 +686,7 @@ async function openChat() {
   clearTimeout(bubbleTimer);
   bubble.hidden = true;
   chatInput.value = "";
-  target = mostRecent();
+  target = viewed && all().includes(viewed) ? viewed : (attentionTarget(perm.pendingSessions()) ?? mostRecent());
   renderChips();
   chat.hidden = false;
   renderAttach();

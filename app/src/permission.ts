@@ -44,3 +44,6 @@ export function describeInput(input: Record<string, unknown> | null | undefined)
   const flat = text.replace(/\s+/g, " ").trim();
   return flat.length > MAX_CHARS ? flat.slice(0, MAX_CHARS - 1) + "…" : flat;
 }
+
+// Sessions qui ont une demande de permission en attente (le pet prend leur couleur).
+export const pendingSessions = () => new Set(queue.flatMap((r) => (r.session ? [r.session] : [])));

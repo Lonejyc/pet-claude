@@ -13,7 +13,8 @@ s'inquiète quand une commande échoue, et te répond dans une bulle.</p>
 
 ## Ce qu'il fait
 - **Réagit en direct** à toutes tes sessions Claude Code (quel que soit le dossier) via leurs hooks.
-- **Reconnaît tes sessions** : une pastille (nom du projet + couleur) étiquette chaque bulle quand plusieurs sessions sont ouvertes.
+- **Reconnaît tes sessions** : une pastille (nom du projet + couleur) étiquette chaque bulle quand plusieurs sessions sont ouvertes. Quand l'une d'elles a besoin de toi
+  (permission, question, erreur), le pet s'entoure d'un halo à sa couleur ; molette ou clic droit sur le pet pour feuilleter les sessions et relire leur dernier message.
 - **Mini-chat** : double-clic sur le pet, tape une question. Elle part dans une *copie* de la session choisie
   (`claude -p --resume --fork-session`, lecture seule) : ta session du terminal n'est pas modifiée. `Tab` change de session.
   Sans session ouverte, il répond aux questions générales mais ne lit aucun fichier : pour une question sur un dossier,
