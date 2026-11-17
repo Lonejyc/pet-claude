@@ -67,3 +67,19 @@ describe("editSummary", () => {
     expect(sessions.editSummary(s.files.size)).toBe("2 fichiers modifiés");
   });
 });
+
+describe("quickActions", () => {
+  it("ne propose rien sans session", () => expect(sessions.quickActions(undefined)).toEqual([]));
+  it("après un tour réussi : expliquer le changement et chercher les effets de bord", () => {
+    const a = sessions.quickActions({ busy: false, last: "done" });
+    expect(a[0]).toMatch(/Explique ce que tu viens de changer/);
+    expect(a[1]).toMatch(/effets de bord/);
+  });
+  it("après une erreur : résumer l'erreur", () => expect(sessions.quickActions({ busy: false, last: "error" })[0]).toMatch(/Résume l'erreur/));
+  it("pendant que Claude travaille : l'avancement, quel que soit le dernier tour", () => {
+    expect(sessions.quickActions({ busy: true, last: "error" })[0]).toBe("Où en es-tu ?");
+  });
+  it("propose au plus 3 actions dans tous les cas", () => {
+    for (const last of ["done", "error", null] as const) for (const busy of [true, false]) expect(sessions.quickActions({ busy, last }).length).toBeLessThanOrEqual(3);
+  });
+});

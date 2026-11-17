@@ -44,6 +44,13 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
   box-shadow: 3px 3px 0 #222; outline: none; font: 700 14px/1.35 "Chalkboard SE", "Comic Sans MS", "Bradley Hand", cursive; }
 #chat input::placeholder { color: #888; }
 /* session visée par la question : une pastille par session ouverte, la choisie est pleine */
+/* actions rapides : trois questions toutes prêtes, compactes pour tenir dans la fenêtre */
+#chat-quick { display: flex; flex-direction: column; gap: 3px; margin-bottom: 6px; }
+#chat-quick:empty { display: none; }
+#chat-quick button { display: flex; justify-content: space-between; gap: 6px; padding: 0 8px; border: 2px solid #222; border-radius: 10px; background: #fff; color: #222;
+  cursor: pointer; text-align: left; font: 700 11px/16px system-ui, sans-serif; }
+#chat-quick button:hover { background: #ece6ff; }
+#chat-quick kbd { flex: none; font: 10px/16px system-ui, sans-serif; opacity: 0.5; }
 #chat-attach { margin-bottom: 6px; padding: 0 8px; border: 2px solid #222; border-radius: 10px; background: #fff; color: #222; cursor: pointer; text-align: center;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 11px/16px system-ui, sans-serif; }
 #chat-attach[hidden] { display: none; }

@@ -1,7 +1,7 @@
 import { emit, listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { buildPet } from "./pet3d";
-import { all, anyBusy, color, count, ignored, label, editSummary, mostRecent, prune, releaseStale, remove, touch, type Session } from "./sessions";
+import { all, anyBusy, color, count, ignored, label, editSummary, mostRecent, quickActions, prune, releaseStale, remove, touch, type Session } from "./sessions";
 import { setSkin } from "./skins";
 import { toolPace } from "./audio-math";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
@@ -229,6 +229,7 @@ listen<Hook>("hook", ({ payload }) => {
   // Claude continue en général après un échec : retour au travail, c'est Stop qui calmera le pet.
   if (payload.event === "PostToolUseFailure") {
     session.failed = true;
+    session.last = "error";
     setState("worried", 2500, "working");
     sound.worried();
   }
@@ -236,6 +237,7 @@ listen<Hook>("hook", ({ payload }) => {
     session.busy = false;
     if (payload.message && (session.failed || Date.now() - lastSpokeAt > COOLDOWN_MS)) say(payload.message, session, editSummary(session.files.size));
     else settle();
+    session.last = session.failed ? "error" : "done";
     const celebrate = CONFETTI && session.tools >= CONFETTI_MIN_TOOLS && !session.failed;
     if (celebrate) confetti();
     // l'utilisateur est ailleurs (Slack, navigateur…) : le pet saute, avec le ta-da si les confettis ne l'ont pas déjà joué
@@ -572,8 +574,33 @@ function renderChips() {
     }),
   );
   // les sessions déjà ouvertes n'apparaissent qu'à leur prochain hook ; sans session, le chat ne lit aucun fichier (cf. chat.rs)
+  renderQuick();
   if (!count() && !attachment) chips.innerHTML = `<span class="none">Aucune session vue : question générale, ou ouvre Claude Code dans ton dossier.</span>`;
 }
+
+// Actions rapides : trois questions toutes prêtes selon ce que Claude vient de faire (Alt+1/2/3 au clavier).
+const quick = document.querySelector<HTMLElement>("#chat-quick")!;
+let quickList: string[] = [];
+function renderQuick() {
+  quickList = attachment ? [] : quickActions(target);
+  quick.replaceChildren(
+    ...quickList.map((q, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = q;
+      b.append(Object.assign(document.createElement("kbd"), { textContent: `⌥${i + 1}` }));
+      b.addEventListener("click", () => sendQuick(i));
+      return b;
+    }),
+  );
+}
+function sendQuick(i: number) {
+  const q = quickList[i];
+  if (!q || asking) return;
+  closeChat();
+  ask(q);
+}
+quick.addEventListener("mousedown", (e) => e.preventDefault()); // ne pas perdre le focus, sinon le chat se ferme
 
 // Pièce jointe déposée sur le pet : une puce « 📎 nom ✕ » au-dessus du champ ; un clic la retire.
 let attachment: Attachment | null = null;
@@ -581,6 +608,7 @@ const attachChip = document.querySelector<HTMLElement>("#chat-attach")!;
 function renderAttach() {
   attachChip.hidden = !attachment;
   if (attachment) attachChip.textContent = `📎 ${attachment.name}  ✕`;
+  renderQuick();
   chatInput.placeholder = attachment ? "Ta question sur ce fichier ?" : "Pose-moi une question…";
 }
 attachChip.addEventListener("mousedown", (e) => e.preventDefault()); // ne pas perdre le focus, sinon le chat se ferme
@@ -687,6 +715,10 @@ listen<{ id: string; kind: "delta" | "done" | "error"; text: string }>("chat", (
 pet.addEventListener("dblclick", openChat);
 chatInput.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeChat();
+  if (e.altKey && /^Digit[1-3]$/.test(e.code)) {
+    e.preventDefault();
+    sendQuick(Number(e.code.slice(5)) - 1);
+  }
   if (e.key === "Tab") {
     e.preventDefault();
     const list = all();

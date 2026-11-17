@@ -152,7 +152,8 @@ multi-couches, micro-variations aléatoires, courte réverb, mastering (compress
 
 ### Phase 3 — Mini-chat enrichi
 
-- [ ] **T09 — Actions rapides contextuelles** dep: T01
+- [x] **T09 — Actions rapides contextuelles** dep: T01 (commit `feat(T09)`)
+  `quickActions(session)` (testé : sans session, tour réussi, erreur, en cours, 3 actions max) ; `session.last` (`done`/`error`) mis à jour aux hooks ; boutons ⌥1/⌥2/⌥3 sous les pastilles du chat, masqués quand un fichier est joint. **Vérifié visuellement** dans Chrome headless (faux Tauri) : libellés selon l'état, clic et Alt+2 envoient la bonne question, la carte tient dans la fenêtre de 296 px.
   3 boutons au double-clic selon le dernier événement (fin de tâche → « Explique ce que tu viens de changer » /
   « Y a-t-il des effets de bord ? » ; erreur → « Résume l'erreur en 2 lignes »). Logique pure `quickActions(state)` testée.
   *Accept.* : boutons visibles, clic = envoi, accessibles au clavier.

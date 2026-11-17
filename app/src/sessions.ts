@@ -8,6 +8,7 @@ export type Session = {
   tools: number; // outils utilisés pendant le tour en cours
   failed: boolean; // un outil a échoué pendant le tour en cours
   files: Set<string>; // fichiers modifiés (Edit/Write…) pendant le tour en cours
+  last: "done" | "error" | null; // issue du dernier tour : sert aux actions rapides du mini-chat
   app: string | null; // app au premier plan quand l'utilisateur a envoyé son dernier prompt : le terminal de cette session
 };
 
@@ -20,7 +21,7 @@ export const ignored = new Set<string>();
 export function touch(id: string, cwd?: string | null): Session {
   let s = sessions.get(id);
   if (!s) {
-    s = { id, cwd: cwd ?? "", order: ++counter, lastSeen: 0, busy: false, tools: 0, failed: false, files: new Set(), app: null };
+    s = { id, cwd: cwd ?? "", order: ++counter, lastSeen: 0, busy: false, tools: 0, failed: false, files: new Set(), last: null, app: null };
     sessions.set(id, s);
   }
   if (cwd) s.cwd = cwd;
@@ -66,3 +67,12 @@ export function prune(maxAgeMs: number) {
 
 // « 3 fichiers modifiés » pour la bulle de fin de tâche ; vide s'il n'y en a pas.
 export const editSummary = (n: number) => (n === 0 ? "" : n === 1 ? "1 fichier modifié" : `${n} fichiers modifiés`);
+
+// Actions rapides du mini-chat selon ce que Claude vient de faire dans la session visée (aucune sans session : question générale).
+export function quickActions(s?: Pick<Session, "busy" | "last">): string[] {
+  if (!s) return [];
+  if (s.busy) return ["Où en es-tu ?", "Que reste-t-il à faire ?", "Qu'est-ce qui te bloque ?"];
+  if (s.last === "error") return ["Résume l'erreur en 2 lignes", "Quelle est la cause probable ?", "Que proposes-tu pour la corriger ?"];
+  if (s.last === "done") return ["Explique ce que tu viens de changer", "Y a-t-il des effets de bord ?", "Que dois-je vérifier avant de commiter ?"];
+  return ["Résume ce qu'on a fait dans cette session", "Quelles sont les prochaines étapes ?"];
+}
