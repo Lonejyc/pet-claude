@@ -158,7 +158,8 @@ multi-couches, micro-variations aléatoires, courte réverb, mastering (compress
   « Y a-t-il des effets de bord ? » ; erreur → « Résume l'erreur en 2 lignes »). Logique pure `quickActions(state)` testée.
   *Accept.* : boutons visibles, clic = envoi, accessibles au clavier.
 
-- [ ] **T10 — Historique éphémère + bouton « Copier le code »** dep: T09
+- [x] **T10 — Historique éphémère + bouton « Copier le code »** dep: T09 (commit `feat(T10)`)
+  `history.ts` (4 réponses max en mémoire, navigation circulaire, extraction des blocs ``` fermés, texte hors blocs ; testé, 7 tests) ; commande Rust `copy_text` (`pbcopy`, 100 Ko max) ; le persona autorise un court bloc de code quand on en demande ; bulle avec `‹ n/m ›` et « Copier le code ». **Vérifié** : scénario complet dans Chrome headless (faux Tauri) avec capture d'écran (texte sans le code, copie appelée avec le bon contenu, navigation bouton et clavier, boutons sans effet de bord sur le focus du terminal) ; `pbcopy` testé en vrai (presse-papiers restauré). Le clic réel sur le panneau non activant reste à constater avec les autres boutons.
   Garder les 4 dernières réponses du chat en mémoire (pas de persistance disque), navigation ←/→, détection des
   blocs de code et bouton copier (`navigator.clipboard`). *Accept.* : test vitest de l'extraction des blocs ; copie vérifiée.
 

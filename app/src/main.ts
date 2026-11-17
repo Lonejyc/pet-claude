@@ -4,6 +4,7 @@ import { buildPet } from "./pet3d";
 import { all, anyBusy, color, count, ignored, label, editSummary, mostRecent, quickActions, prune, releaseStale, remove, touch, type Session } from "./sessions";
 import { setSkin } from "./skins";
 import { toolPace } from "./audio-math";
+import * as history from "./history";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { classifyDrop, defaultQuestion, type Attachment } from "./attachment";
 import * as perm from "./permission";
@@ -92,6 +93,7 @@ function say(text: string, session?: Session, extra = "") {
     bubbleTag.textContent = label(session);
     bubble.style.setProperty("--tag", color(session));
   }
+  bubbleTools.hidden = true;
   // cliquer la bulle ramène le terminal de la session au premier plan
   if (session?.app) bubble.dataset.app = session.app;
   else delete bubble.dataset.app;
@@ -659,13 +661,49 @@ function closeChat() {
 
 // --- réponse en streaming
 const ANSWER_MAX_CHARS = 140; // la bulle ne doit pas sortir par le haut de la fenêtre
-type Asking = { id: string; session?: Session; raw: string };
+type Asking = { id: string; session?: Session; raw: string; question: string };
 let asking: Asking | null = null;
 
 const shorten = (text: string) => {
   const t = text.replace(/[*`#>_🟧]/gu, "").replace(/\s+/g, " ").trim();
   return t.length > ANSWER_MAX_CHARS ? t.slice(0, ANSWER_MAX_CHARS - 1) + "…" : t;
 };
+
+// Historique : ‹ 2/3 › pour relire les dernières réponses sans reposer la question, et « Copier le code » si la réponse en contient.
+const bubbleTools = document.querySelector<HTMLElement>("#bubble-tools")!;
+const histPos = document.querySelector<HTMLElement>("#hist-pos")!;
+const histCopy = document.querySelector<HTMLButtonElement>("#hist-copy")!;
+function showEntry() {
+  const e = history.list()[history.cursor];
+  if (!e) return;
+  showAnswer(shorten(history.prose(e.raw)));
+  delete bubble.dataset.app;
+  bubbleTools.hidden = false;
+  histPos.textContent = history.list().length > 1 ? `${history.cursor + 1}/${history.list().length}` : "";
+  document.querySelector<HTMLElement>("#hist-prev")!.hidden = document.querySelector<HTMLElement>("#hist-next")!.hidden = history.list().length < 2;
+  histCopy.hidden = !history.extractCode(e.raw).length;
+  histCopy.textContent = "Copier le code";
+  clearTimeout(bubbleTimer);
+  bubbleTimer = setTimeout(() => (bubble.hidden = true), 15_000);
+}
+function stepHistory(delta: number) {
+  history.step(delta);
+  showEntry();
+}
+// Les boutons sont dans la bulle : leurs clics ne doivent pas déclencher le focus du terminal (cf. clic sur la bulle).
+bubbleTools.addEventListener("click", (e) => e.stopPropagation());
+document.querySelector("#hist-prev")!.addEventListener("click", () => stepHistory(-1));
+document.querySelector("#hist-next")!.addEventListener("click", () => stepHistory(1));
+histCopy.addEventListener("click", async () => {
+  const e = history.list()[history.cursor];
+  const ok = e && (await invoke<boolean>("copy_text", { text: history.extractCode(e.raw).join("\n\n") }));
+  histCopy.textContent = ok ? "Copié ✓" : "Échec de la copie";
+});
+// ← / → relisent les réponses quand la fenêtre du pet a le focus (après un clic sur la bulle)
+document.addEventListener("keydown", (e) => {
+  if (bubbleTools.hidden || bubble.hidden || chatOpen || history.list().length < 2) return;
+  if (e.key === "ArrowLeft" || e.key === "ArrowRight") stepHistory(e.key === "ArrowLeft" ? -1 : 1);
+});
 
 function showAnswer(text: string) {
   typed.textContent = text;
@@ -676,7 +714,8 @@ function ask(question: string, att: Attachment | null = null) {
   const fork = crypto.randomUUID();
   ignored.add(fork); // les hooks de la copie ne sont pas de vraies sessions
   const session = target;
-  asking = { id: crypto.randomUUID(), session, raw: "" };
+  asking = { id: crypto.randomUUID(), session, raw: "", question };
+  bubbleTools.hidden = true;
   clearInterval(typeTimer);
   clearTimeout(bubbleTimer);
   delete bubble.dataset.app;
@@ -695,7 +734,7 @@ listen<{ id: string; kind: "delta" | "done" | "error"; text: string }>("chat", (
   if (!asking || payload.id !== asking.id) return;
   if (payload.kind === "delta") {
     asking.raw += payload.text;
-    showAnswer(shorten(asking.raw));
+    showAnswer(shorten(history.prose(asking.raw)));
     setState("talking");
     sound.blip();
     return;
@@ -707,6 +746,8 @@ listen<{ id: string; kind: "delta" | "done" | "error"; text: string }>("chat", (
     sound.worried();
   } else {
     settle();
+    history.push({ question: asking.question, raw: asking.raw });
+    showEntry();
   }
   asking = null;
   bubbleTimer = setTimeout(() => (bubble.hidden = true), 10_000);

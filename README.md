@@ -31,6 +31,8 @@ s'inquiète quand une commande échoue, et te répond dans une bulle.</p>
   seul ce fichier (et son dossier, en lecture) est rendu accessible. Un seul fichier à la fois ; les liens (URL) ne sont pas pris en charge.
 - **Actions rapides** : à l'ouverture du chat, trois questions toutes prêtes selon ce que Claude vient de faire (« Explique ce que tu viens de changer »,
   « Résume l'erreur en 2 lignes », « Où en es-tu ? »…), au clic ou avec ⌥1 / ⌥2 / ⌥3.
+- **Historique du chat** : les 4 dernières réponses restent relisibles (‹ 2/3 ›, ← / →), en mémoire seulement, jamais écrites sur disque. Si une réponse contient
+  du code, un bouton « Copier le code » le met dans le presse-papiers.
 - **Vit** : il cligne des yeux, s'endort, se laisse prendre (il panique), se lance et rebondit sur les bords de l'écran.
 - Visible **au-dessus des apps en plein écran**, sur tous les espaces, multi-écrans.
 

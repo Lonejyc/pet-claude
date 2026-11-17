@@ -8,7 +8,7 @@ use tauri::Emitter;
 
 const PERSONA: &str = "Tu es le petit pet de l'utilisateur, une créature-bloc orange qui vit sur son bureau. \
 Réponds en français, en 2 phrases courtes maximum (140 caractères au total), sans markdown ni liste, \
-sur un ton malicieux mais utile. Tu peux lire le code du projet pour répondre, mais tu ne modifies rien.";
+sur un ton malicieux mais utile. Exception : si on te demande du code ou une commande, donne-le dans un court bloc ```, en plus de ta phrase. Tu peux lire le code du projet pour répondre, mais tu ne modifies rien.";
 
 /// Sans session ouverte, le pet n'a aucun dossier à lire : il répond aux questions générales et renvoie vers un terminal pour le reste.
 const NO_SESSION: &str = "Ici, aucune session Claude Code n'est ouverte et tu n'as accès à aucun fichier. \
@@ -44,6 +44,18 @@ fn remove_fork_files(fork: &str) {
         let _ = std::fs::remove_file(dir.path().join(format!("{fork}.jsonl")));
         let _ = std::fs::remove_dir_all(dir.path().join(fork));
     }
+}
+
+/// Copie un texte dans le presse-papiers via `pbcopy` (fiable dans une fenêtre non activante, contrairement à l'API web). 100 Ko maximum.
+#[tauri::command]
+pub fn copy_text(text: String) -> bool {
+    use std::io::Write;
+    if text.len() > 100_000 {
+        return false;
+    }
+    let Ok(mut child) = Command::new("/usr/bin/pbcopy").stdin(Stdio::piped()).spawn() else { return false };
+    let wrote = child.stdin.take().is_some_and(|mut s| s.write_all(text.as_bytes()).is_ok());
+    child.wait().is_ok_and(|s| s.success()) && wrote
 }
 
 #[tauri::command]

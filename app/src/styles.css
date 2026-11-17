@@ -7,6 +7,11 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
   text-align: center; transform-origin: 50% 100%; animation: pop 0.2s ease-out;
 }
 #bubble-text { display: block; }
+/* historique du chat : ‹ 2/3 › et copie du code */
+#bubble-tools { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 4px; font: 700 10px/14px system-ui, sans-serif; }
+#bubble-tools[hidden], #bubble-tools button[hidden] { display: none; }
+#bubble-tools button { padding: 0 7px; border: 2px solid #222; border-radius: 9px; background: #fff; color: #222; cursor: pointer; font: inherit; }
+#bubble-tools button:hover { background: #ece6ff; }
 /* pastille du projet, posée sur le bord haut de la bulle quand plusieurs sessions sont ouvertes */
 #bubble-tag { position: absolute; top: -11px; left: 12px; max-width: 200px; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   border: 2px solid #222; border-radius: 10px; background: var(--tag); color: #fff; font: 700 10px/15px system-ui, sans-serif; }
