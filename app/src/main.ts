@@ -5,12 +5,13 @@ import { all, anyBusy, color, count, ignored, label, attentionTarget, cycle, edi
 import { setSkin } from "./skins";
 import { toolPace } from "./audio-math";
 import * as history from "./history";
+import { fail, isHeavy, isNervous, streakKey, succeed } from "./nervous";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { classifyDrop, defaultQuestion, type Attachment } from "./attachment";
 import * as perm from "./permission";
 import { setSoundConfig, setToolPitch, sound } from "./sound";
 
-type Hook = { event: string; session?: string | null; cwd?: string | null; tool?: string; file?: string; message?: string };
+type Hook = { event: string; session?: string | null; cwd?: string | null; tool?: string; file?: string; command?: string | null; message?: string };
 
 const pet = document.querySelector<HTMLElement>("#pet")!;
 const bubble = document.querySelector<HTMLElement>("#bubble")!;
@@ -72,6 +73,7 @@ function setState(state: string, thenAfterMs?: number, then = "idle") {
   if (state !== "sleeping" && state !== "emote") lastActivity = Date.now();
   delete pet.dataset.tool;
   delete pet.dataset.emote;
+  pet.removeAttribute("data-nervous"); // la nervosité ne survit pas à un changement d'état
   clearInterval(typingTimer);
   clearTimeout(stateTimer);
   if (thenAfterMs) stateTimer = setTimeout(() => setState(then), thenAfterMs);
@@ -198,6 +200,19 @@ const settle = () => setState(anyBusy() ? "working" : "idle");
 
 // Indicateur d'attention : avec plusieurs sessions, le pet s'entoure de la couleur de celle qui a besoin de toi.
 // Molette ou clic droit sur le pet : on feuillette les sessions, la bulle redit leur dernier message.
+// Gros diff non commité (> 500 lignes) : une goutte de sueur. Mesuré par Rust (cache 30 s) après chaque modification et en fin de tour.
+function renderSweat() {
+  pet.classList.toggle("sweat", isHeavy(mostRecent()?.diff));
+}
+function refreshDiff(session: Session) {
+  if (!session.cwd || Date.now() - session.diffAt < 15_000) return;
+  session.diffAt = Date.now();
+  invoke<number | null>("git_diff_size", { cwd: session.cwd }).then((n) => {
+    session.diff = n;
+    renderSweat();
+  });
+}
+
 let viewed: Session | undefined;
 function renderAttention() {
   const s = count() >= 2 ? attentionTarget(perm.pendingSessions()) : undefined;
@@ -247,7 +262,11 @@ listen<Hook>("hook", ({ payload }) => {
     setState("working");
   }
   // Fin d'un outil : le clavier se tait, même si Claude continue à rédiger.
-  if (payload.event === "PostToolUse") clearInterval(typingTimer);
+  if (payload.event === "PostToolUse") {
+    clearInterval(typingTimer);
+    session.streak = succeed(session.streak, streakKey(payload.tool, payload.command));
+    if (payload.tool && TOOL_KINDS[payload.tool] === "edit") refreshDiff(session);
+  }
   if (payload.event === "PreToolUse") {
     const gap = lastToolAt ? Date.now() - lastToolAt : undefined;
     lastToolAt = Date.now();
@@ -269,7 +288,11 @@ listen<Hook>("hook", ({ payload }) => {
     session.failed = true;
     session.attention = true;
     session.last = "error";
-    setState("worried", 2500, "working");
+    session.streak = fail(session.streak, streakKey(payload.tool, payload.command));
+    // même commande qui échoue en boucle : le pet n'en peut plus (tremble plus longtemps et plus vite)
+    const nervous = isNervous(session.streak);
+    setState("worried", nervous ? 6000 : 2500, "working");
+    pet.toggleAttribute("data-nervous", nervous);
     sound.worried();
   }
   // Claude attend l'utilisateur (permission, question…) : cette session réclame de l'attention jusqu'au prochain prompt.
@@ -293,6 +316,7 @@ listen<Hook>("hook", ({ payload }) => {
     session.failed = false;
     session.tools = 0;
     session.files.clear();
+    refreshDiff(session);
   }
   renderAttention();
 });

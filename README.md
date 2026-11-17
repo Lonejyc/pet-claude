@@ -34,6 +34,8 @@ s'inquiète quand une commande échoue, et te répond dans une bulle.</p>
   « Résume l'erreur en 2 lignes », « Où en es-tu ? »…), au clic ou avec ⌥1 / ⌥2 / ⌥3.
 - **Historique du chat** : les 4 dernières réponses restent relisibles (‹ 2/3 ›, ← / →), en mémoire seulement, jamais écrites sur disque. Si une réponse contient
   du code, un bouton « Copier le code » le met dans le presse-papiers.
+- **Sent l'état du projet** : une goutte de sueur quand plus de 500 lignes ne sont pas commitées (mesuré avec `git diff --shortstat`, rien n'est modifié ni envoyé),
+  et il tremble plus fort quand la même commande échoue 3 fois de suite.
 - **Vit** : il cligne des yeux, s'endort, se laisse prendre (il panique), se lance et rebondit sur les bords de l'écran.
 - Visible **au-dessus des apps en plein écran**, sur tous les espaces, multi-écrans.
 

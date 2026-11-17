@@ -1,3 +1,4 @@
+import type { Streak } from "./nervous";
 // Les sessions Claude Code ouvertes, reconnues grâce au session_id et au cwd que chaque hook envoie.
 export type Session = {
   id: string;
@@ -10,6 +11,9 @@ export type Session = {
   files: Set<string>; // fichiers modifiés (Edit/Write…) pendant le tour en cours
   attention: boolean; // Claude attend l'utilisateur (Notification) ou a échoué : le pet prend la couleur de cette session
   said: string; // dernier message de Claude dans cette session, pour le relire en changeant de session
+  streak: Streak | null; // échecs consécutifs d'une même commande
+  diff: number | null; // lignes non commitées dans le dossier du projet (insertions + suppressions)
+  diffAt: number; // heure de la dernière mesure
   last: "done" | "error" | null; // issue du dernier tour : sert aux actions rapides du mini-chat
   app: string | null; // app au premier plan quand l'utilisateur a envoyé son dernier prompt : le terminal de cette session
 };
@@ -23,7 +27,7 @@ export const ignored = new Set<string>();
 export function touch(id: string, cwd?: string | null): Session {
   let s = sessions.get(id);
   if (!s) {
-    s = { id, cwd: cwd ?? "", order: ++counter, lastSeen: 0, busy: false, tools: 0, failed: false, files: new Set(), attention: false, said: "", last: null, app: null };
+    s = { id, cwd: cwd ?? "", order: ++counter, lastSeen: 0, busy: false, tools: 0, failed: false, files: new Set(), attention: false, said: "", streak: null, diff: null, diffAt: 0, last: null, app: null };
     sessions.set(id, s);
   }
   if (cwd) s.cwd = cwd;

@@ -69,7 +69,7 @@ pub fn listen(app: tauri::AppHandle) {
             let file = if input["file_path"].is_string() { &input["file_path"] } else { &input["notebook_path"] };
             let _ = app.emit(
                 "hook",
-                serde_json::json!({ "event": event, "session": v["session_id"], "cwd": v["cwd"], "tool": v["tool_name"], "file": file, "message": v["last_assistant_message"] }),
+                serde_json::json!({ "event": event, "session": v["session_id"], "cwd": v["cwd"], "tool": v["tool_name"], "file": file, "command": input["command"], "message": v["last_assistant_message"] }),
             );
             let _ = req.respond(tiny_http::Response::empty(200));
         }

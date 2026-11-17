@@ -173,7 +173,8 @@ multi-couches, micro-variations aléatoires, courte réverb, mastering (compress
 
 ### Phase 5 — Santé du dépôt
 
-- [ ] **T12 — Nervosité : gros diff et échecs répétés** dep: T01
+- [x] **T12 — Nervosité : gros diff et échecs répétés** dep: T01 (commit `feat(T12)`)
+  Rust : `git_diff_size(cwd)` (async, `git --no-optional-locks diff --shortstat HEAD`, cache 30 s, `None` hors dépôt ; testé sur un vrai dépôt temporaire) ; le hook transporte aussi `command`. Front : `nervous.ts` (série d'échecs d'une même commande ≥ 3, succès de la même commande = fin de série ; seuil de 500 lignes ; testé). Goutte de sueur (`.sweat`) et tremblement plus rapide et plus long (`data-nervous`, éteint au changement d'état). **Vérifié** dans Chrome headless (faux Tauri) : 3e échec → nerveux, retour à la normale après 6 s, série interrompue par un succès, `git_diff_size` appelé après un Edit puis goutte visible (capture regardée). Seuils en constantes (`nervous.ts`). Le rendu du tremblement plus rapide se juge à l'œil.
   Rust : commande `git_diff_size(cwd)` (`git diff --shortstat`, cache 30 s, jamais bloquant, ignorée hors dépôt).
   Front : > 500 lignes → état « transpire » (nouvelle variante visuelle) ; 3 `PostToolUseFailure` consécutifs sur la
   même commande → « nerveux ». Seuils en constantes. *Accept.* : tests du parsing shortstat et du compteur d'échecs ;
