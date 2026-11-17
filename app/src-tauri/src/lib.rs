@@ -2,6 +2,7 @@ mod chat;
 mod local_usage;
 mod menu;
 mod native;
+mod permission;
 mod server;
 mod setup;
 
@@ -189,7 +190,7 @@ pub fn run() {
     setup::refresh_hooks_if_outdated();
     tauri::Builder::default()
         .plugin(tauri_nspanel::init())
-        .invoke_handler(tauri::generate_handler![native::screens, native::window_origin, native::set_window_origin, native::mouse, native::frontmost_app, native::focus_app, native::set_chat_open, native::set_hit_regions, native::set_sleeping, chat::ask, quit, open_settings_cmd, plan_usage, local_usage, toggle_pet, pet_hidden, setup_status, hooks_enable, style_enable, login_enable, get_settings, save_settings])
+        .invoke_handler(tauri::generate_handler![native::screens, native::window_origin, native::set_window_origin, native::mouse, native::frontmost_app, native::focus_app, native::set_chat_open, native::set_hit_regions, native::set_sleeping, chat::ask, permission::decide, quit, open_settings_cmd, plan_usage, local_usage, toggle_pet, pet_hidden, setup_status, hooks_enable, style_enable, login_enable, get_settings, save_settings])
         .setup(|app| {
             // Accessory : pas d'icône dans le Dock, requis pour s'afficher au-dessus du plein écran.
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);

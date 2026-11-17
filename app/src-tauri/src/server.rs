@@ -2,6 +2,7 @@
 //! Il n'accepte que les requêtes qui portent le secret du pet : sans lui, n'importe quelle page web ouverte dans un navigateur
 //! pourrait poster vers `localhost` et faire dire ce qu'elle veut au pet (un en-tête personnalisé force en plus une requête
 //! préalable CORS que ce serveur ne valide jamais).
+use crate::permission;
 use crate::setup::{token, EVENTS};
 use std::io::Read;
 use tauri::Emitter;
@@ -23,7 +24,7 @@ fn authorize(is_post: bool, host: Option<&str>, secret: Option<&str>, content_le
     if !host.is_some_and(|h| HOSTS.contains(&h)) || !secret.is_some_and(|s| same_secret(s, expected)) {
         return Err(403);
     }
-    if !EVENTS.contains(&event) {
+    if !EVENTS.contains(&event) && event != permission::EVENT {
         return Err(404);
     }
     if content_length.is_some_and(|n| n > MAX_BODY) {
@@ -57,6 +58,12 @@ pub fn listen(app: tauri::AppHandle) {
             let mut body = String::new();
             let _ = req.as_reader().take(MAX_BODY as u64).read_to_string(&mut body);
             let v: serde_json::Value = serde_json::from_str(&body).unwrap_or_default();
+            // demande de permission : retenue dans son propre thread jusqu'au clic de l'utilisateur
+            if event == permission::EVENT {
+                let app = app.clone();
+                std::thread::spawn(move || permission::serve(app, req, v));
+                continue;
+            }
             // fichier visé par l'outil (Edit, Write, NotebookEdit) : sert à compter les fichiers modifiés pendant un tour
             let input = &v["tool_input"];
             let file = if input["file_path"].is_string() { &input["file_path"] } else { &input["notebook_path"] };
@@ -87,6 +94,13 @@ mod tests {
         for event in ["PostToolUse", "UserPromptSubmit", "Notification"] {
             assert_eq!(check(true, OK_HOST, Some(SECRET), None, event), Ok(()), "{event}");
         }
+    }
+
+    #[test]
+    fn permission_requests_need_the_secret_like_any_other_event() {
+        assert_eq!(check(true, OK_HOST, Some(SECRET), None, "PermissionRequest"), Ok(()));
+        assert_eq!(check(true, OK_HOST, None, None, "PermissionRequest"), Err(403));
+        assert_eq!(check(false, OK_HOST, Some(SECRET), None, "PermissionRequest"), Err(405));
     }
 
     #[test]

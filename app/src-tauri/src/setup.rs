@@ -62,9 +62,9 @@ fn hook_command(event: &str, token: &str) -> String {
     format!("curl -s -m 1 -H \"X-Pet-Token: {token}\" --data-binary @- localhost:4242/{event} || true")
 }
 
-/// Un hook est à nous s'il envoie vers le port du pet (y compris les anciens, sans secret).
+/// Un hook est à nous s'il envoie vers le port du pet (y compris les anciens, sans secret, et celui des permissions, dont le délai est plus long).
 fn is_ours(command: &str) -> bool {
-    command.starts_with("curl -s -m 1 ") && command.contains("localhost:4242/")
+    command.starts_with("curl -s -m ") && command.contains("localhost:4242/")
 }
 
 fn read_claude_settings(home: &Path) -> Result<Value, String> {
@@ -338,6 +338,13 @@ mod tests {
         assert!(hooks_present_in(&home) && !hooks_installed_in(&home, TOKEN));
         set_hooks_in(&home, TOKEN, true).unwrap();
         assert!(hooks_installed_in(&home, TOKEN));
+    }
+
+    #[test]
+    fn the_permission_hook_with_a_longer_timeout_is_recognized_as_ours_and_foreign_curls_are_not() {
+        assert!(is_ours("curl -s -m 25 -H \"X-Pet-Token: abc\" --data-binary @- localhost:4242/PermissionRequest || true"));
+        assert!(!is_ours("curl -s -m 5 https://example.com/hook"));
+        assert!(!is_ours("curl -s -m 5 localhost:8080/PermissionRequest"));
     }
 
     #[test]

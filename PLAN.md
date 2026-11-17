@@ -120,7 +120,8 @@ multi-couches, micro-variations aléatoires, courte réverb, mastering (compress
   Verdict : **faisable**, prouvé avec un vrai Claude Code (allow, deny, hook bloquant). Détails, format et limites : `docs/spike-permissions.md`.
   Reste à vérifier à la main avant T06b : comportement du dialogue du terminal quand le pet ne répond pas (non testable avec `claude -p`).
 
-- [ ] **T06b — Socle Rust des permissions** dep: T06
+- [x] **T06b — Socle Rust des permissions** dep: T06 (commit `feat(T06b)`)
+  *Vérifié en vrai* sur le pet relancé : sans jeton 403 ; avec jeton la requête est retenue 20 s puis corps vide (200) ; un autre hook répond en 1 ms pendant l'attente. 32 tests Rust (format JSON exact, expiration, clic tardif refusé, `is_ours`). Le chemin « clic → `decide` » est testé en unitaire, de bout en bout en T06c.
   Route `PermissionRequest` qui retient la requête HTTP jusqu'à la décision ou 20 s (corps vide à l'expiration = pas de décision) ; commande `decide(id, allow)` ; jamais d'allow par défaut ; seuls `behavior`/`message` sont renvoyés ; `is_ours` (`setup.rs`) élargi à `curl -s -m `.
   **Ne pas encore installer le hook chez l'utilisateur** (le pet de dev migre ses `settings.json` au démarrage : sans bulle, chaque demande de permission attendrait 20 s pour rien) : l'installation du hook (`timeout: 30`, `curl -s -m 25`) se fait en T06c.
   *Accept.* : tests Rust (décision → JSON exact, expiration → corps vide, désinstallation retire bien le hook, hooks existants intacts, `EVENTS` + migration).
