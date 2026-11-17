@@ -121,12 +121,12 @@ multi-couches, micro-variations aléatoires, courte réverb, mastering (compress
   Reste à vérifier à la main avant T06b : comportement du dialogue du terminal quand le pet ne répond pas (non testable avec `claude -p`).
 
 - [ ] **T06b — Socle Rust des permissions** dep: T06
-  Hook `PermissionRequest` installé avec `timeout: 30` et `curl -s -m 25` ; `is_ours` (`setup.rs`) élargi à `curl -s -m ` ; route qui retient la requête HTTP
-  jusqu'à la décision ou 20 s (corps vide à l'expiration = pas de décision) ; commande `decide(id, allow)` ; jamais d'allow par défaut ; seul `behavior`/`message` sont renvoyés.
+  Route `PermissionRequest` qui retient la requête HTTP jusqu'à la décision ou 20 s (corps vide à l'expiration = pas de décision) ; commande `decide(id, allow)` ; jamais d'allow par défaut ; seuls `behavior`/`message` sont renvoyés ; `is_ours` (`setup.rs`) élargi à `curl -s -m `.
+  **Ne pas encore installer le hook chez l'utilisateur** (le pet de dev migre ses `settings.json` au démarrage : sans bulle, chaque demande de permission attendrait 20 s pour rien) : l'installation du hook (`timeout: 30`, `curl -s -m 25`) se fait en T06c.
   *Accept.* : tests Rust (décision → JSON exact, expiration → corps vide, désinstallation retire bien le hook, hooks existants intacts, `EVENTS` + migration).
 
 - [ ] **T06c — Bulle « Autoriser / Refuser »** dep: T06b
-  Bulle avec outil et commande tronquée (`textContent`), décompte, raccourcis (Entrée/Échap), file d'attente, retour au dialogue du terminal à l'expiration.
+  Installer le hook `PermissionRequest` (`timeout: 30`, `curl -s -m 25`, migration incluse), puis bulle avec outil et commande tronquée (`textContent`), décompte, raccourcis (Entrée/Échap), file d'attente, retour au dialogue du terminal à l'expiration.
   *Accept.* : test vitest de la file et du décompte ; scénario réel avec un `rm` ou un `git push` simulé ; `[?]` pour la vérification en session interactive.
 
 - [ ] **T07 — Raccourci clavier global (⌘⇧C) → mini-chat au centre de l'écran actif** dep: T00
