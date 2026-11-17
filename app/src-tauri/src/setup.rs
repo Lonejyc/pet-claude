@@ -141,11 +141,10 @@ pub fn set_hooks(on: bool) -> Result<(), String> {
 pub fn refresh_hooks_if_outdated() {
     let home = real_home();
     let token = token_in(&home);
-    if hooks_present_in(&home) && !hooks_installed_in(&home, &token) {
-        if let Err(e) = set_hooks_in(&home, &token, true) {
+    if hooks_present_in(&home) && !hooks_installed_in(&home, &token)
+        && let Err(e) = set_hooks_in(&home, &token, true) {
             eprintln!("mise à jour des hooks : {e}");
         }
-    }
 }
 
 // ---- personnalité globale
@@ -247,11 +246,10 @@ pub fn migrate_legacy() {
 
 fn migrate_legacy_in(home: &Path, exe: Option<&str>) {
     let old_settings = settings_path_for(home, LEGACY_IDENTIFIER);
-    if old_settings.exists() && !settings_path(home).exists() {
-        if let Ok(text) = std::fs::read_to_string(&old_settings) {
+    if old_settings.exists() && !settings_path(home).exists()
+        && let Ok(text) = std::fs::read_to_string(&old_settings) {
             let _ = write_atomic(&settings_path(home), &text);
         }
-    }
     // l'ancien agent de lancement est remplacé par le nouveau (le lancement au démarrage reste activé)
     if login_plist(home, LEGACY_IDENTIFIER).exists() {
         let _ = set_login_in(home, true, exe.unwrap_or(""));

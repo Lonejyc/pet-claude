@@ -26,7 +26,7 @@ fn claude_path() -> &'static str {
             .output()
             .ok()
             .and_then(|o| String::from_utf8(o.stdout).ok())
-            .and_then(|out| out.lines().map(str::trim).filter(|l| l.starts_with('/')).last().map(String::from))
+            .and_then(|out| out.lines().map(str::trim).rfind(|l| l.starts_with('/')).map(String::from))
             .unwrap_or_else(|| "claude".into())
     })
 }

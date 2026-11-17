@@ -57,11 +57,10 @@ async fn plan_usage() -> Option<serde_json::Value> {
     use std::time::{Duration, Instant};
     static LAST: Mutex<Option<(Instant, Option<serde_json::Value>)>> = Mutex::new(None);
     let mut last = LAST.lock().ok()?;
-    if let Some((at, value)) = &*last {
-        if at.elapsed() < Duration::from_secs(120) {
+    if let Some((at, value)) = &*last
+        && at.elapsed() < Duration::from_secs(120) {
             return value.clone();
         }
-    }
     let value = live_usage().map(|usage| serde_json::json!({ "usage": usage, "cachedAt": null })).or_else(cached_usage).or_else(|| last.as_ref().and_then(|(_, v)| v.clone()));
     *last = Some((Instant::now(), value.clone()));
     value

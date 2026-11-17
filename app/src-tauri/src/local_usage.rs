@@ -112,11 +112,10 @@ fn compute() -> Option<Value> {
 pub fn get() -> Option<Value> {
     static LAST: Mutex<Option<(Instant, Option<Value>)>> = Mutex::new(None);
     let mut last = LAST.lock().ok()?;
-    if let Some((at, value)) = &*last {
-        if at.elapsed() < Duration::from_secs(120) {
+    if let Some((at, value)) = &*last
+        && at.elapsed() < Duration::from_secs(120) {
             return value.clone();
         }
-    }
     let value = compute();
     *last = Some((Instant::now(), value.clone()));
     value
