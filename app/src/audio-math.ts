@@ -38,8 +38,8 @@ export function reverbImpulse(sampleRate: number, seconds: number, decayDb = 60,
 
 export type SoundMode = "all" | "alerts";
 
-// Mode « discrétion absolue » : seules les alertes (erreur, fin de tâche) restent audibles.
-export const ALERT_SOUNDS = ["tada", "worried"];
+// Mode « discrétion absolue » : seules les alertes (erreur, fin de tâche, demande de permission) restent audibles.
+export const ALERT_SOUNDS = ["tada", "worried", "yelp"]; // yelp : le pet demande ton attention (permission)
 export const soundAllowed = (mode: SoundMode, name: string) => mode === "all" || ALERT_SOUNDS.includes(name);
 
 // Allure des outils : plus ils s'enchaînent vite (écart court entre deux PreToolUse), plus les frappes sont aiguës et rapprochées.

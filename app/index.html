@@ -9,6 +9,13 @@
   </head>
   <body>
     <div id="chat" hidden><div id="chat-chips"></div><input id="chat-input" type="text" placeholder="Pose-moi une question…" autocomplete="off" spellcheck="false" /></div>
+    <div id="perm" hidden>
+      <span id="perm-tag" hidden></span>
+      <div id="perm-title"></div>
+      <code id="perm-cmd"></code>
+      <div id="perm-buttons"><button id="perm-deny" type="button">Refuser <kbd>Échap</kbd></button><button id="perm-allow" type="button">Autoriser <kbd>↵</kbd></button></div>
+      <div id="perm-timer"></div>
+    </div>
     <div id="bubble" hidden><span id="bubble-tag" hidden></span><span id="bubble-text"><span id="typed"></span></span></div>
     <div id="pet" data-state="idle">
       <div class="zzz"><span>z</span><span>z</span><span>Z</span></div>

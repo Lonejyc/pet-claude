@@ -18,6 +18,26 @@ body { display: flex; flex-direction: column; justify-content: flex-end; align-i
 #bubble::before, #chat::before { bottom: -17px; border-width: 14px 11px 0; border-top-color: #222; }
 #bubble::after, #chat::after { bottom: -11px; border-width: 11px 8px 0; border-top-color: #fff; }
 #bubble[hidden] { display: none; }
+/* demande de permission : même style que la bulle, avec deux boutons */
+#perm { position: relative; box-sizing: border-box; width: 260px; margin-bottom: 16px; padding: 10px 12px 5px; background: #fff; color: #222; border: 3px solid #222;
+  border-radius: 18px; box-shadow: 3px 3px 0 #222; text-align: center; animation: pop 0.2s ease-out; transform-origin: 50% 100%;
+  font: 700 13px/1.35 "Chalkboard SE", "Comic Sans MS", "Bradley Hand", cursive; }
+#perm[hidden] { display: none; }
+#perm::before, #perm::after { content: ""; position: absolute; left: 50%; border: solid transparent; transform: translateX(-50%); }
+#perm::before { bottom: -17px; border-width: 14px 11px 0; border-top-color: #222; }
+#perm::after { bottom: -11px; border-width: 11px 8px 0; border-top-color: #fff; }
+#perm-tag { position: absolute; top: -11px; left: 12px; max-width: 200px; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border: 2px solid #222; border-radius: 10px; background: var(--tag); color: #fff; font: 700 10px/15px system-ui, sans-serif; }
+#perm-tag[hidden] { display: none; }
+#perm-cmd { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; margin: 3px 0 7px; padding: 3px 6px; overflow: hidden; border-radius: 8px; background: #f1ecf9;
+  text-align: left; font: 11px/1.3 ui-monospace, Menlo, monospace; overflow-wrap: anywhere; }
+#perm-buttons { display: flex; gap: 8px; }
+#perm-buttons button { flex: 1; padding: 3px 6px; border: 2px solid #222; border-radius: 12px; box-shadow: 2px 2px 0 #222; background: #fff; color: #222; cursor: pointer; font: inherit; }
+#perm-buttons button:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 #222; }
+#perm-allow { background: #b9f0c4 !important; }
+#perm-deny { background: #f6c4c4 !important; }
+#perm-buttons kbd { font: 10px system-ui, sans-serif; opacity: 0.6; }
+#perm-timer { margin-top: 4px; font: 10px system-ui, sans-serif; color: #777; }
 #chat { position: relative; margin-bottom: 16px; animation: pop 0.2s ease-out; transform-origin: 50% 100%; }
 #chat[hidden] { display: none; }
 #chat input { width: 250px; box-sizing: border-box; padding: 6px 14px; background: #fff; color: #222; border: 3px solid #222; border-radius: 18px;

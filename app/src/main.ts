@@ -4,6 +4,7 @@ import { buildPet } from "./pet3d";
 import { all, anyBusy, color, count, ignored, label, editSummary, mostRecent, prune, releaseStale, remove, touch, type Session } from "./sessions";
 import { setSkin } from "./skins";
 import { toolPace } from "./audio-math";
+import * as perm from "./permission";
 import { setSoundConfig, setToolPitch, sound } from "./sound";
 
 type Hook = { event: string; session?: string | null; cwd?: string | null; tool?: string; file?: string; message?: string };
@@ -124,6 +125,57 @@ bubble.addEventListener("click", () => {
   clearTimeout(bubbleTimer);
   bubble.hidden = true;
 });
+
+// Demandes de permission : la bulle « Autoriser / Refuser » remplace la bulle de parole tant qu'une demande attend.
+// Sans clic, Rust rend la main au terminal à l'expiration (jamais d'« oui » par défaut).
+const permBox = document.querySelector<HTMLElement>("#perm")!;
+const permTag = document.querySelector<HTMLElement>("#perm-tag")!;
+const permTitle = document.querySelector<HTMLElement>("#perm-title")!;
+const permCmd = document.querySelector<HTMLElement>("#perm-cmd")!;
+const permTimer = document.querySelector<HTMLElement>("#perm-timer")!;
+
+function renderPerm() {
+  const r = perm.current();
+  permBox.hidden = !r;
+  if (!r) return;
+  const s = all().find((x) => x.id === r.session);
+  permTag.hidden = !s || count() < 2;
+  if (s) {
+    permTag.textContent = label(s);
+    permBox.style.setProperty("--tag", color(s));
+  }
+  permTitle.textContent = `Claude veut utiliser ${r.tool ?? "un outil"}${perm.pending() > 1 ? ` (+${perm.pending() - 1} en attente)` : ""}`;
+  permCmd.textContent = perm.describeInput(r.input);
+  permTimer.textContent = `Sinon le terminal prend le relais dans ${perm.secondsLeft(r)} s`;
+}
+
+function decidePerm(allow: boolean) {
+  const r = perm.current();
+  if (!r) return;
+  invoke("decide", { id: r.id, allow });
+  perm.resolve(r.id);
+  renderPerm();
+}
+
+listen<{ id: number; session?: string | null; cwd?: string | null; tool?: string; input?: Record<string, unknown> | null; timeoutMs: number }>("permission", ({ payload }) => {
+  perm.push(payload);
+  clearTimeout(bubbleTimer);
+  bubble.hidden = true;
+  closeChat();
+  wake();
+  hop();
+  sound.yelp();
+  renderPerm();
+});
+document.querySelector("#perm-allow")!.addEventListener("click", () => decidePerm(true));
+document.querySelector("#perm-deny")!.addEventListener("click", () => decidePerm(false));
+// Entrée / Échap seulement quand la fenêtre du pet a le focus (après un clic) : jamais de focus volé au terminal.
+document.addEventListener("keydown", (e) => {
+  if (permBox.hidden || (e.key !== "Enter" && e.key !== "Escape")) return;
+  e.preventDefault();
+  decidePerm(e.key === "Enter");
+});
+setInterval(() => (perm.expire() || perm.current()) && renderPerm(), 1000);
 
 // Le pet reste "au travail" tant qu'une autre session a un outil en cours.
 const settle = () => setState(anyBusy() ? "working" : "idle");
@@ -639,6 +691,7 @@ function pushRegions() {
   add(pet, 24, 24, 6); // marge : accessoires (marteau, enclume, clavier, chapeau du skin) un peu en dehors du cadre du pet
   add(bubble, 6, 14, 6); // 14 en haut : la pastille de projet dépasse du bord
   add(chat, 6, 6, 6);
+  add(permBox, 6, 14, 6);
   const key = JSON.stringify(regions);
   if (key !== lastRegions) {
     lastRegions = key;

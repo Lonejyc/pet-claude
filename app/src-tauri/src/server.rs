@@ -24,7 +24,7 @@ fn authorize(is_post: bool, host: Option<&str>, secret: Option<&str>, content_le
     if !host.is_some_and(|h| HOSTS.contains(&h)) || !secret.is_some_and(|s| same_secret(s, expected)) {
         return Err(403);
     }
-    if !EVENTS.contains(&event) && event != permission::EVENT {
+    if !EVENTS.contains(&event) {
         return Err(404);
     }
     if content_length.is_some_and(|n| n > MAX_BODY) {

@@ -21,6 +21,9 @@ s'inquiète quand une commande échoue, et te répond dans une bulle.</p>
 - **Te prévient** quand une tâche est finie pendant que tu es dans une autre app : il saute, la bulle indique le nombre de fichiers modifiés,
   et un clic sur la bulle ramène au premier plan l'app où tu as tapé ton dernier prompt (ton terminal). Pour ça, il lit le nom de l'app
   active (macOS) à chaque prompt et à chaque fin de tâche ; rien n'est enregistré ni envoyé.
+- **Valide tes permissions en un clic** : quand Claude Code demande l'autorisation d'utiliser un outil, une bulle affiche l'outil et la commande
+  (tronquée) avec « Autoriser / Refuser ». Sans clic sous 20 s, la boîte de dialogue habituelle de ton terminal reprend la main : le pet ne dit
+  jamais « oui » à ta place. Seul un clic dans la fenêtre du pet peut approuver (aucune route du serveur local ne le permet). Détails : `docs/spike-permissions.md`.
 - **Vit** : il cligne des yeux, s'endort, se laisse prendre (il panique), se lance et rebondit sur les bords de l'écran.
 - Visible **au-dessus des apps en plein écran**, sur tous les espaces, multi-écrans.
 
@@ -79,7 +82,7 @@ Dans **Réglages** : couleur et accessoire du pet (Apparence), et un mode « emo
 - `/Applications/pet-claude.app`
 - Lecture seule : l'item « Claude Code-credentials » du Keychain (via `/usr/bin/security`, token envoyé uniquement à `api.anthropic.com`
   pour les limites du forfait), `~/.claude.json` (cache d'usage) et les transcripts `~/.claude/projects/**/*.jsonl` (coût estimé).
-- `~/.claude/settings.json` : huit hooks (`curl` vers `localhost:4242`) **ajoutés à côté des tiens**, sauvegarde dans
+- `~/.claude/settings.json` : neuf hooks (`curl` vers `localhost:4242`) **ajoutés à côté des tiens**, sauvegarde dans
   `settings.json.bak-pet-claude`. Si tu coches la personnalité : `outputStyle: "Pet"` et `~/.claude/output-styles/pet.md`.
 - `~/Library/LaunchAgents/io.github.lonejyc.pet-claude.plist` (lancement au démarrage, optionnel)
 - `~/Library/Application Support/io.github.lonejyc.pet-claude/` : tes réglages (`settings.json`) et le secret du pet (`token`, lisible par toi seul)

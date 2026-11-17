@@ -52,6 +52,11 @@ fn response_body(decision: Option<bool>) -> Option<String> {
 
 /// Traite une demande dans son propre thread (le serveur ne doit pas rester bloqué pendant l'attente).
 pub fn serve(app: tauri::AppHandle, req: tiny_http::Request, payload: serde_json::Value) {
+    // pet masqué : personne ne verrait la bulle, on rend la main tout de suite à la boîte de dialogue du terminal
+    if crate::native::HIDDEN.load(Ordering::Relaxed) {
+        let _ = req.respond(tiny_http::Response::empty(200));
+        return;
+    }
     let (id, rx) = register();
     let _ = app.emit(
         "permission",

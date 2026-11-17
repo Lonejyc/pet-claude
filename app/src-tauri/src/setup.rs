@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 
 pub const IDENTIFIER: &str = "io.github.lonejyc.pet-claude";
 const LEGACY_IDENTIFIER: &str = "fr.perso.petclaude"; // identifiant des betas 1 et 2, migré au démarrage
-pub const EVENTS: [&str; 8] = ["SessionStart", "SessionEnd", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "Notification", "Stop"];
+pub const EVENTS: [&str; 9] = ["SessionStart", "SessionEnd", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "Notification", "PermissionRequest", "Stop"];
 const STYLE_MD: &str = include_str!("../../../.claude/output-styles/pet.md");
 
 fn real_home() -> PathBuf {
@@ -59,7 +59,9 @@ fn token_in(home: &Path) -> String {
 // ---- hooks Claude Code
 
 fn hook_command(event: &str, token: &str) -> String {
-    format!("curl -s -m 1 -H \"X-Pet-Token: {token}\" --data-binary @- localhost:4242/{event} || true")
+    // le hook des permissions attend la décision de l'utilisateur : délai plus long (cf. permission.rs, WAIT = 20 s)
+    let secs = if event == "PermissionRequest" { 25 } else { 1 };
+    format!("curl -s -m {secs} -H \"X-Pet-Token: {token}\" --data-binary @- localhost:4242/{event} || true")
 }
 
 /// Un hook est à nous s'il envoie vers le port du pet (y compris les anciens, sans secret, et celui des permissions, dont le délai est plus long).
@@ -116,7 +118,11 @@ fn set_hooks_in(home: &Path, token: &str, on: bool) -> Result<(), String> {
         // on retire d'abord les nôtres (pas de doublon, c'est aussi la désinstallation et la mise à jour du secret), puis on rajoute
         groups.retain(|g| !g["hooks"].as_array().is_some_and(|hs| hs.iter().any(|h| h["command"].as_str().is_some_and(is_ours))));
         if on {
-            groups.push(json!({ "hooks": [{ "type": "command", "command": hook_command(ev, token) }] }));
+            let mut hook = json!({ "type": "command", "command": hook_command(ev, token) });
+            if ev == "PermissionRequest" {
+                hook["timeout"] = json!(30); // sans cela, Claude attendrait jusqu'à 600 s si le pet ne répond jamais
+            }
+            groups.push(json!({ "hooks": [hook] }));
         }
     }
     hooks.retain(|_, v| v.as_array().is_none_or(|a| !a.is_empty()));
@@ -345,6 +351,24 @@ mod tests {
         assert!(is_ours("curl -s -m 25 -H \"X-Pet-Token: abc\" --data-binary @- localhost:4242/PermissionRequest || true"));
         assert!(!is_ours("curl -s -m 5 https://example.com/hook"));
         assert!(!is_ours("curl -s -m 5 localhost:8080/PermissionRequest"));
+    }
+
+    #[test]
+    fn only_the_permission_hook_waits_for_the_user() {
+        let home = temp_home("perm");
+        write_claude(&home, &json!({ "hooks": { "PermissionRequest": [{ "hooks": [{ "type": "command", "command": "/usr/local/bin/mon-hook" }] }] } }));
+        set_hooks_in(&home, TOKEN, true).unwrap();
+        let s = read_claude(&home);
+        let groups = s["hooks"]["PermissionRequest"].as_array().unwrap();
+        assert_eq!(groups.len(), 2, "le hook de l'utilisateur est conservé à côté du nôtre");
+        let ours = groups.iter().flat_map(|g| g["hooks"].as_array().unwrap()).find(|h| is_ours(h["command"].as_str().unwrap())).unwrap();
+        assert_eq!(ours["timeout"], 30);
+        assert!(ours["command"].as_str().unwrap().starts_with("curl -s -m 25 "));
+        let stop = &s["hooks"]["Stop"][0]["hooks"][0];
+        assert!(stop["command"].as_str().unwrap().starts_with("curl -s -m 1 ") && stop.get("timeout").is_none());
+        set_hooks_in(&home, TOKEN, false).unwrap();
+        let after = read_claude(&home);
+        assert_eq!(after["hooks"]["PermissionRequest"].as_array().unwrap().len(), 1, "la désinstallation ne retire que le nôtre");
     }
 
     #[test]

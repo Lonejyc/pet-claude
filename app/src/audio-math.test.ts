@@ -53,10 +53,11 @@ describe("reverbImpulse", () => {
 
 describe("soundAllowed", () => {
   it("mode all : tout passe", () => expect(["blip", "key", "tada"].every((n) => soundAllowed("all", n))).toBe(true));
-  it("mode alerts : seules l'erreur et la fin de tâche passent", () => {
+  it("mode alerts : seuls l'erreur, la fin de tâche et la permission passent", () => {
     expect(soundAllowed("alerts", "tada")).toBe(true);
     expect(soundAllowed("alerts", "worried")).toBe(true);
-    for (const n of ["blip", "key", "tok", "crash", "thump", "squish", "boing", "yelp"]) expect(soundAllowed("alerts", n)).toBe(false);
+    expect(soundAllowed("alerts", "yelp")).toBe(true);
+    for (const n of ["blip", "key", "tok", "crash", "thump", "squish", "boing"]) expect(soundAllowed("alerts", n)).toBe(false);
   });
 });
 

@@ -126,7 +126,9 @@ multi-couches, micro-variations aléatoires, courte réverb, mastering (compress
   **Ne pas encore installer le hook chez l'utilisateur** (le pet de dev migre ses `settings.json` au démarrage : sans bulle, chaque demande de permission attendrait 20 s pour rien) : l'installation du hook (`timeout: 30`, `curl -s -m 25`) se fait en T06c.
   *Accept.* : tests Rust (décision → JSON exact, expiration → corps vide, désinstallation retire bien le hook, hooks existants intacts, `EVENTS` + migration).
 
-- [ ] **T06c — Bulle « Autoriser / Refuser »** dep: T06b
+- [?] **T06c — Bulle « Autoriser / Refuser »** dep: T06b
+  *Fait (commit `feat(T06c)`)* : hook `PermissionRequest` installé (`timeout: 30`, `curl -m 25`, hooks de l'utilisateur conservés, désinstallation sélective, testé) ; `permission.ts` (file, décompte, expiration, description tronquée ; testé) ; carte « Autoriser / Refuser » (clic, Entrée/Échap) qui remplace la bulle ; saut + `yelp` (ajouté aux alertes du mode discret) ; pet masqué = rendu immédiat au terminal. **Vérifié visuellement** dans Chrome headless sur la vraie page avec un faux Tauri (rendu, file « +1 en attente », clics → `decide` avec les bons ids). Le hook est installé dans tes `settings.json` par le pet de dev.
+  *À valider par l'humain (fenêtre réelle)* : (1) provoquer une vraie permission dans Claude Code : la carte apparaît au-dessus du pet, les boutons répondent au clic sur le panneau non activant ; (2) ne rien faire pendant 20 s : le dialogue du terminal reprend la main ; (3) pet fermé : le dialogue du terminal s'affiche normalement ; (4) répondre dans le terminal pendant que la carte est affichée : noter ce qui se passe.
   Installer le hook `PermissionRequest` (`timeout: 30`, `curl -s -m 25`, migration incluse), puis bulle avec outil et commande tronquée (`textContent`), décompte, raccourcis (Entrée/Échap), file d'attente, retour au dialogue du terminal à l'expiration.
   *Accept.* : test vitest de la file et du décompte ; scénario réel avec un `rm` ou un `git push` simulé ; `[?]` pour la vérification en session interactive.
 
