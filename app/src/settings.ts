@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { EMPTY, isUnlocked, progress, type Counters } from "./achievements";
 import { ACCESSORIES, COLORS } from "./skins";
 
 type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; soundMode: "all" | "alerts"; chatShortcut: string; stealth: boolean; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
@@ -115,6 +116,13 @@ $("quit").addEventListener("click", () => invoke("quit"));
   fields.emotes.checked = s.emotes;
   fields.emoteEverySec.value = String(s.emoteEverySec);
   fields.skinAccessory.value = s.skinAccessory;
+  // accessoires à débloquer : grisés avec leur progression, sauf celui déjà choisi
+  const counters = { ...EMPTY, ...(await invoke<Counters>("get_achievements")) };
+  for (const option of fields.skinAccessory.options) {
+    if (isUnlocked(option.value, counters) || option.value === s.skinAccessory) continue;
+    option.disabled = true;
+    option.textContent = `🔒 ${ACCESSORIES[option.value]} (${progress(option.value, counters)})`;
+  }
   for (const r of swatches.querySelectorAll<HTMLInputElement>("input")) r.checked = r.value === s.skinColor;
   showOutputs();
   await refreshStatus();

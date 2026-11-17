@@ -205,7 +205,8 @@ multi-couches, micro-variations aléatoires, courte réverb, mastering (compress
 
 ### Phase 7 — Gamification
 
-- [ ] **T16 — Succès locaux qui débloquent des accessoires** dep: T01, T12
+- [x] **T16 — Succès locaux qui débloquent des accessoires** dep: T01, T12 (commit `feat(T16)`)
+  `achievements.ts` (règles : casque 100 fichiers modifiés, lunettes 10 tests/builds réparés, auréole 1 session sans erreur d'outil (≥ 5 outils), couronne 3 ; seuils, franchissements, progression ; testé) ; compteurs dans `achievements.json` (Rust `get/save_achievements`, clés connues et entiers plafonnés ; testé) mis à jour à la fin d'un tour, à un test/build réparé et à la fin d'une session ; annonce du déblocage 6 s après le message de fin de tour ; deux nouveaux accessoires 3D (`acc-hardhat`, `acc-sunglasses`) ; fenêtre des réglages : accessoires verrouillés grisés avec leur progression (« 🔒 Casque de chantier (42 / 100 · …) »), l'accessoire déjà choisi reste (grandfather). **Vérifié** dans Chrome headless (faux Tauri) avec captures regardées des deux accessoires (verres des lunettes agrandis après un premier rendu), franchissement du seuil (99 → 101 fichiers : sauvegarde + annonce) et liste des options verrouillées dans `settings.html`. Aucune donnée ne quitte la machine.
   Compteurs persistés (fichier local `~/.claude/pet-stats.json` ou clé de réglages, jamais envoyés) :
   100 fichiers modifiés → casque de chantier ; 10 builds/tests réparés → lunettes de soleil ;
   session sans erreur d'outil → auréole/couronne (existants, à verrouiller). Nouveaux accessoires : casque,

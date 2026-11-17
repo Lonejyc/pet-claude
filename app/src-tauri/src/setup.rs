@@ -228,6 +228,34 @@ fn default_settings() -> Value {
     json!({ "cooldownSec": 12, "sleepAfterSec": 60, "confetti": true, "sound": true, "soundMode": "all", "chatShortcut": "Control+Alt+Space", "stealth": true, "volume": 1.0, "emotes": false, "emoteEverySec": 30, "skinColor": "orange", "skinAccessory": "none" })
 }
 
+// ---- succès : compteurs locaux qui débloquent des accessoires (jamais envoyés nulle part)
+
+const COUNTERS: [&str; 3] = ["files", "fixes", "cleanSessions"];
+
+fn achievements_path(home: &Path) -> PathBuf {
+    support_dir(home, IDENTIFIER).join("achievements.json")
+}
+
+/// Compteurs lus sur disque : seules les clés connues, des entiers positifs plafonnés (un fichier édité à la main ne casse rien).
+fn read_achievements_in(home: &Path) -> Value {
+    let stored: Value = std::fs::read_to_string(achievements_path(home)).ok().and_then(|t| serde_json::from_str(&t).ok()).unwrap_or_default();
+    Value::Object(COUNTERS.iter().map(|k| (k.to_string(), json!(stored[k].as_u64().unwrap_or(0).min(1_000_000_000)))).collect())
+}
+
+fn write_achievements_in(home: &Path, counters: &Value) -> Result<(), String> {
+    // même nettoyage qu'à la lecture
+    let clean: Value = Value::Object(COUNTERS.iter().map(|k| (k.to_string(), json!(counters[k].as_u64().unwrap_or(0).min(1_000_000_000)))).collect());
+    write_atomic(&achievements_path(home), &serde_json::to_string_pretty(&clean).map_err(|e| e.to_string())?)
+}
+
+pub fn read_achievements() -> Value {
+    read_achievements_in(&real_home())
+}
+
+pub fn write_achievements(counters: &Value) -> Result<(), String> {
+    write_achievements_in(&real_home(), counters)
+}
+
 pub fn read_settings() -> Value {
     let mut merged = default_settings();
     if let Some(stored) = std::fs::read_to_string(settings_path(&real_home())).ok().and_then(|t| serde_json::from_str::<Value>(&t).ok()) {
@@ -369,6 +397,18 @@ mod tests {
         set_hooks_in(&home, TOKEN, false).unwrap();
         let after = read_claude(&home);
         assert_eq!(after["hooks"]["PermissionRequest"].as_array().unwrap().len(), 1, "la désinstallation ne retire que le nôtre");
+    }
+
+    #[test]
+    fn achievements_start_at_zero_roundtrip_and_ignore_junk() {
+        let home = temp_home("ach");
+        assert_eq!(read_achievements_in(&home), json!({ "files": 0, "fixes": 0, "cleanSessions": 0 }));
+        write_achievements_in(&home, &json!({ "files": 120, "fixes": 3, "cleanSessions": 1, "evil": 9, "x": "y" })).unwrap();
+        assert_eq!(read_achievements_in(&home), json!({ "files": 120, "fixes": 3, "cleanSessions": 1 }));
+        std::fs::write(achievements_path(&home), r#"{"files":-5,"fixes":"beaucoup","cleanSessions":99999999999999}"#).unwrap();
+        assert_eq!(read_achievements_in(&home), json!({ "files": 0, "fixes": 0, "cleanSessions": 1_000_000_000 }));
+        std::fs::write(achievements_path(&home), "pas du json").unwrap();
+        assert_eq!(read_achievements_in(&home)["files"], 0);
     }
 
     #[test]

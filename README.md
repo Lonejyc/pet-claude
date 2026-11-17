@@ -43,6 +43,9 @@ s'inquiète quand une commande échoue, et te répond dans une bulle.</p>
 - **Coût et contexte de la session** : au survol du pet (« boutique · 1,84 $ · contexte 68 % ») et dans le menu de la barre de menus. Calculés en local depuis le transcript de la session
   (`~/.claude/projects/…`) ; une alerte douce apparaît quand le contexte atteint 80 % (la compaction automatique approche). Le coût est une estimation à partir d'une grille de tarifs
   embarquée ; la taille de la fenêtre n'étant pas dans le transcript, elle est supposée à 200 000 tokens (1 000 000 dès que le contexte dépasse 200 000).
+- **Succès locaux** : l'usage réel débloque des accessoires, à choisir dans Réglages > Apparence : casque de chantier (100 fichiers modifiés), lunettes de soleil
+  (10 tests ou builds réparés), auréole (1 session sans erreur d'outil), couronne (3 sessions sans erreur). Les compteurs sont stockés dans un fichier local
+  (`achievements.json`, dossier de l'app), jamais envoyés ; un accessoire déjà choisi reste affiché même s'il est à débloquer.
 - **Vit** : il cligne des yeux, s'endort, se laisse prendre (il panique), se lance et rebondit sur les bords de l'écran.
 - Visible **au-dessus des apps en plein écran**, sur tous les espaces, multi-écrans.
 
@@ -104,7 +107,7 @@ Dans **Réglages** : couleur et accessoire du pet (Apparence), et un mode « emo
 - `~/.claude/settings.json` : neuf hooks (`curl` vers `localhost:4242`) **ajoutés à côté des tiens**, sauvegarde dans
   `settings.json.bak-pet-claude`. Si tu coches la personnalité : `outputStyle: "Pet"` et `~/.claude/output-styles/pet.md`.
 - `~/Library/LaunchAgents/io.github.lonejyc.pet-claude.plist` (lancement au démarrage, optionnel)
-- `~/Library/Application Support/io.github.lonejyc.pet-claude/` : tes réglages (`settings.json`) et le secret du pet (`token`, lisible par toi seul)
+- `~/Library/Application Support/io.github.lonejyc.pet-claude/` : tes réglages (`settings.json`), tes compteurs de succès (`achievements.json`) et le secret du pet (`token`, lisible par toi seul)
 
 Aucune donnée ne quitte ta machine. Chaque question du mini-chat est un appel normal à Claude (donc comptée comme tel).
 

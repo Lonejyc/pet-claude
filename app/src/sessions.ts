@@ -16,6 +16,8 @@ export type Session = {
   stats: Stats | null; // coût et contexte de la session (cf. stats.ts)
   statsAt: number;
   warned: boolean; // déjà prévenu que le contexte approche de la compaction
+  toolsAll: number; // outils utilisés depuis le début de la session
+  errors: number; // échecs d'outils depuis le début de la session
   red: Check | null; // dernier test ou build en échec : le prochain succès du même genre se fête
   streak: Streak | null; // échecs consécutifs d'une même commande
   diff: number | null; // lignes non commitées dans le dossier du projet (insertions + suppressions)
@@ -33,7 +35,7 @@ export const ignored = new Set<string>();
 export function touch(id: string, cwd?: string | null): Session {
   let s = sessions.get(id);
   if (!s) {
-    s = { id, cwd: cwd ?? "", order: ++counter, lastSeen: 0, busy: false, tools: 0, failed: false, files: new Set(), attention: false, said: "", stats: null, statsAt: 0, warned: false, red: null, streak: null, diff: null, diffAt: 0, last: null, app: null };
+    s = { id, cwd: cwd ?? "", order: ++counter, lastSeen: 0, busy: false, tools: 0, failed: false, files: new Set(), attention: false, said: "", toolsAll: 0, errors: 0, stats: null, statsAt: 0, warned: false, red: null, streak: null, diff: null, diffAt: 0, last: null, app: null };
     sessions.set(id, s);
   }
   if (cwd) s.cwd = cwd;

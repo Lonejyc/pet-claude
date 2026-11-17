@@ -183,6 +183,16 @@ fn login_enable(on: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn get_achievements() -> serde_json::Value {
+    setup::read_achievements()
+}
+
+#[tauri::command]
+fn save_achievements(counters: serde_json::Value) -> Result<(), String> {
+    setup::write_achievements(&counters)
+}
+
+#[tauri::command]
 fn get_settings() -> serde_json::Value {
     setup::read_settings()
 }
@@ -205,7 +215,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_nspanel::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![native::screens, native::window_origin, native::set_window_origin, native::mouse, native::frontmost_app, native::file_size, native::focus_app, native::set_chat_open, native::set_hit_regions, native::set_sleeping, chat::ask, chat::copy_text, gitdiff::git_diff_size, permission::decide, quit, open_settings_cmd, plan_usage, local_usage, session_stats, toggle_pet, pet_hidden, setup_status, hooks_enable, style_enable, login_enable, get_settings, save_settings])
+        .invoke_handler(tauri::generate_handler![native::screens, native::window_origin, native::set_window_origin, native::mouse, native::frontmost_app, native::file_size, native::focus_app, native::set_chat_open, native::set_hit_regions, native::set_sleeping, chat::ask, chat::copy_text, gitdiff::git_diff_size, permission::decide, quit, open_settings_cmd, plan_usage, local_usage, session_stats, toggle_pet, pet_hidden, setup_status, hooks_enable, style_enable, login_enable, get_settings, save_settings, get_achievements, save_achievements])
         .setup(|app| {
             // Accessory : pas d'icône dans le Dock, requis pour s'afficher au-dessus du plein écran.
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);

@@ -2,8 +2,9 @@ import { emit, listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { buildPet } from "./pet3d";
 import { all, anyBusy, color, count, ignored, label, attentionTarget, cycle, editSummary, mostRecent, quickActions, prune, releaseStale, remove, touch, type Session } from "./sessions";
-import { setSkin } from "./skins";
+import { ACCESSORIES, setSkin } from "./skins";
 import { toolPace } from "./audio-math";
+import { EMPTY, newlyUnlocked, sessionWasClean, type Counters } from "./achievements";
 import { checkKind, isCommit } from "./celebrate";
 import { formatStats, warnState, type Stats } from "./stats";
 import * as history from "./history";
@@ -218,6 +219,23 @@ function refreshDiff(session: Session) {
 }
 
 // Moments à fêter : commit réussi (confettis), test ou build qui repasse au vert (saut + ta-da).
+// Succès : compteurs locaux (fichiers modifiés, tests réparés, sessions sans erreur) qui débloquent des accessoires dans les réglages.
+let counters: Counters = { ...EMPTY };
+invoke<Counters>("get_achievements").then((c) => (counters = { ...EMPTY, ...c }));
+function bump(key: keyof Counters, n: number) {
+  if (n <= 0) return;
+  const before = { ...counters };
+  counters[key] += n;
+  invoke("save_achievements", { counters });
+  const unlocked = newlyUnlocked(before, counters);
+  if (!unlocked.length) return;
+  // un peu plus tard : on laisse d'abord lire le message de fin de tour
+  setTimeout(() => {
+    say(`Nouvel accessoire : ${unlocked.map((a) => ACCESSORIES[a].toLowerCase()).join(" et ")} ! Dans Réglages > Apparence.`);
+    hop();
+  }, 6000);
+}
+
 let lastCelebrationAt = 0;
 function celebrateNow(big: boolean) {
   lastCelebrationAt = Date.now();
@@ -285,6 +303,8 @@ listen<Hook>("hook", ({ payload }) => {
   const id = payload.session ?? "default";
   if (ignored.has(id)) return;
   if (payload.event === "SessionEnd") {
+    const ended = all().find((s) => s.id === id);
+    if (ended && sessionWasClean({ tools: ended.toolsAll, errors: ended.errors })) bump("cleanSessions", 1);
     remove(id);
     if (pet.dataset.state === "working") settle();
     renderAttention();
@@ -316,6 +336,7 @@ listen<Hook>("hook", ({ payload }) => {
         const kind = checkKind(payload.command);
         if (kind && session.red === kind) {
           session.red = null;
+          bump("fixes", 1);
           celebrateNow(false); // test ou build repassé au vert
         }
       }
@@ -328,6 +349,7 @@ listen<Hook>("hook", ({ payload }) => {
     setToolPitch(pitch);
     session.busy = true;
     session.tools++;
+    session.toolsAll++;
     setState("working");
     const kind = payload.tool && TOOL_KINDS[payload.tool];
     if (kind) pet.dataset.tool = kind;
@@ -340,6 +362,7 @@ listen<Hook>("hook", ({ payload }) => {
   // Claude continue en général après un échec : retour au travail, c'est Stop qui calmera le pet.
   if (payload.event === "PostToolUseFailure") {
     session.failed = true;
+    session.errors++;
     session.attention = true;
     session.last = "error";
     session.streak = fail(session.streak, streakKey(payload.tool, payload.command));
@@ -368,6 +391,7 @@ listen<Hook>("hook", ({ payload }) => {
       hop();
       if (!celebrate) sound.tada();
     });
+    bump("files", session.files.size);
     session.failed = false;
     session.tools = 0;
     session.files.clear();
