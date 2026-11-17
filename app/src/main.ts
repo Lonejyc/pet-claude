@@ -5,6 +5,7 @@ import { all, anyBusy, color, count, ignored, label, attentionTarget, cycle, edi
 import { setSkin } from "./skins";
 import { toolPace } from "./audio-math";
 import { checkKind, isCommit } from "./celebrate";
+import { formatStats, warnState, type Stats } from "./stats";
 import * as history from "./history";
 import { fail, isHeavy, isNervous, streakKey, succeed } from "./nervous";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
@@ -226,6 +227,33 @@ function celebrateNow(big: boolean) {
   else sound.tada();
 }
 
+// Coût de la session et remplissage du contexte : au survol du pet, dans le menu de la barre de menus, et une alerte à 80 %.
+const statsChip = document.querySelector<HTMLElement>("#stats")!;
+function refreshStats(session: Session, force = false) {
+  if (!force && Date.now() - session.statsAt < 20_000) return;
+  session.statsAt = Date.now();
+  invoke<Stats | null>("session_stats", { id: session.id }).then((s) => {
+    session.stats = s;
+    if (!s) return;
+    const w = warnState(session.warned, s.pct);
+    session.warned = w.warned;
+    if (w.notify) say(`Le contexte de ${label(session)} est rempli à ${s.pct} %, la compaction approche.`, session);
+    if (!statsChip.hidden) showStats();
+  });
+}
+function showStats() {
+  const s = mostRecent();
+  statsChip.hidden = !s?.stats;
+  if (s?.stats) statsChip.textContent = formatStats(label(s), s.stats);
+}
+pet.addEventListener("pointerenter", () => {
+  const s = mostRecent();
+  if (!s || drag || stealthActive()) return;
+  showStats();
+  refreshStats(s, true);
+});
+pet.addEventListener("pointerleave", () => (statsChip.hidden = true));
+
 let viewed: Session | undefined;
 function renderAttention() {
   const s = count() >= 2 ? attentionTarget(perm.pendingSessions()) : undefined;
@@ -344,7 +372,11 @@ listen<Hook>("hook", ({ payload }) => {
     session.tools = 0;
     session.files.clear();
     refreshDiff(session);
+    refreshStats(session, true);
   }
+  if (payload.event === "PostToolUse") refreshStats(session);
+  const recent = mostRecent();
+  if (recent && payload.event === "Stop") emit("focus-session", { id: recent.id, label: label(recent) });
   renderAttention();
 });
 

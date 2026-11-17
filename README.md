@@ -40,6 +40,9 @@ s'inquiète quand une commande échoue, et te répond dans une bulle.</p>
   Il reconnaît ces commandes dans ce que Claude exécute (Bash) ; rien n'est envoyé ni enregistré.
 - **Mode furtif** : pendant un appel (ton micro est utilisé par Zoom, Meet, Teams, Slack Huddle, FaceTime…), le pet devient tout petit et translucide, se tait et ne parle plus ;
   les demandes de permission restent visibles. Il lit seulement le drapeau CoreAudio « le micro est utilisé » : aucun son n'est capté. Désactivable dans les Réglages.
+- **Coût et contexte de la session** : au survol du pet (« boutique · 1,84 $ · contexte 68 % ») et dans le menu de la barre de menus. Calculés en local depuis le transcript de la session
+  (`~/.claude/projects/…`) ; une alerte douce apparaît quand le contexte atteint 80 % (la compaction automatique approche). Le coût est une estimation à partir d'une grille de tarifs
+  embarquée ; la taille de la fenêtre n'étant pas dans le transcript, elle est supposée à 200 000 tokens (1 000 000 dès que le contexte dépasse 200 000).
 - **Vit** : il cligne des yeux, s'endort, se laisse prendre (il panique), se lance et rebondit sur les bords de l'écran.
 - Visible **au-dessus des apps en plein écran**, sur tous les espaces, multi-écrans.
 

@@ -195,7 +195,9 @@ multi-couches, micro-variations aléatoires, courte réverb, mastering (compress
   en haut ; réglage on/off. Meet = navigateur : limiter à la détection d'apps natives, documenter la limite.
   *Accept.* : test de la liste de bundle IDs ; bascule automatique au lancement/fermeture de Zoom.
 
-- [ ] **T15 — Coût de la session en cours + % de contexte** dep: T01
+- [?] **T15 — Coût de la session en cours + % de contexte** dep: T01
+  *Fait (commit `feat(T15)`)* : `local_usage::session_stats` (coût via `price_cost` factorisé avec le calcul 24 h / 7 j, contexte = entrée + cache de la dernière requête du fil principal, sous-agents comptés dans le coût seulement, dédoublonnage ; transcript retrouvé par identifiant validé ; cache 15 s) ; commande `session_stats` ; ligne « projet · coût · contexte » dans le menu (`menu.rs`, événement `focus-session`) ; puce au survol du pet + alerte à 80 % (une fois, réarmée sous 50 %) ; `stats.ts` testé. **Vérifié** : 4 tests Rust sur fixtures (coût exact, doublon, sous-agent, 1 M, modèle inconnu, identifiants) ; appel sur le **vrai transcript** de cette session (≈ 15 $, contexte 47 % de 1 M, modèle reconnu) ; scénario Chrome headless (puce, alerte, `focus-session` émis ; capture regardée). **Non vérifié** : la ligne dans le vrai menu de la barre de menus. Écart : la fenêtre de contexte est une heuristique (`ponytail:`).
+  *À valider par l'humain* : survoler le pet (puce sous le pet) ; ouvrir le menu de la barre de menus après un tour de Claude : une ligne « projet · $ · contexte % » apparaît avant le nombre de sessions.
   `local_usage.rs` : lire le `.jsonl` de la session courante (transcript de la session du hook) → coût session
   (`PRICES` existant) et taux de remplissage = tokens de contexte du dernier message / fenêtre du modèle (table des
   fenêtres, `ponytail:` si approximatif). Affichage au survol du pet + ligne dans le menu (`menu.rs`) ; alerte

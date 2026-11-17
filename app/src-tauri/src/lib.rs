@@ -87,6 +87,10 @@ fn menu_bar_icon(app: &tauri::App) -> tauri::Result<()> {
             }
         })
         .build(app)?;
+    // session que le pet met en avant (la plus récente) : le menu en affiche le coût et le contexte
+    app.listen("focus-session", |e| {
+        *menu::FOCUS.lock().unwrap() = serde_json::from_str(e.payload()).ok();
+    });
     app.listen("sessions", |e| {
         menu::SESSIONS.store(e.payload().parse().unwrap_or(0), std::sync::atomic::Ordering::Relaxed);
     });
@@ -139,6 +143,12 @@ fn toggle_pet(app: tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         native::toggle_pet(&window);
     }
+}
+
+/// Coût et contexte d'une session, pour le survol du pet. Async : relire un gros transcript ne doit pas figer l'interface.
+#[tauri::command]
+async fn session_stats(id: String) -> Option<serde_json::Value> {
+    local_usage::session_stats(&id)
 }
 
 #[tauri::command]
@@ -195,7 +205,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_nspanel::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![native::screens, native::window_origin, native::set_window_origin, native::mouse, native::frontmost_app, native::file_size, native::focus_app, native::set_chat_open, native::set_hit_regions, native::set_sleeping, chat::ask, chat::copy_text, gitdiff::git_diff_size, permission::decide, quit, open_settings_cmd, plan_usage, local_usage, toggle_pet, pet_hidden, setup_status, hooks_enable, style_enable, login_enable, get_settings, save_settings])
+        .invoke_handler(tauri::generate_handler![native::screens, native::window_origin, native::set_window_origin, native::mouse, native::frontmost_app, native::file_size, native::focus_app, native::set_chat_open, native::set_hit_regions, native::set_sleeping, chat::ask, chat::copy_text, gitdiff::git_diff_size, permission::decide, quit, open_settings_cmd, plan_usage, local_usage, session_stats, toggle_pet, pet_hidden, setup_status, hooks_enable, style_enable, login_enable, get_settings, save_settings])
         .setup(|app| {
             // Accessory : pas d'icône dans le Dock, requis pour s'afficher au-dessus du plein écran.
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);

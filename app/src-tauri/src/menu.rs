@@ -2,11 +2,15 @@
 //! Un menu natif n'a que du texte : les barres de progression sont des blocs Unicode (▰▱).
 use serde_json::Value;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Mutex;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::{AppHandle, Manager};
 
 /// Nombre de sessions Claude actives, envoyé par le pet (événement "sessions").
 pub static SESSIONS: AtomicUsize = AtomicUsize::new(0);
+
+/// (identifiant, nom du projet) de la session la plus récente, envoyé par le pet (événement "focus-session").
+pub static FOCUS: Mutex<Option<(String, String)>> = Mutex::new(None);
 
 const LIMITS: [(&str, &str, bool); 4] = [("five_hour", "Session · 5 h", true), ("seven_day", "Semaine", true), ("seven_day_sonnet", "Sonnet · semaine", false), ("seven_day_opus", "Opus · semaine", false)];
 
@@ -36,11 +40,17 @@ fn cost_line(name: &str, v: &Value) -> String {
 }
 
 /// Ligne grisée (non cliquable), comme « Version » dans les menus système.
+/// « boutique · 1,84 $ · contexte 68 % » (le $ est sous-estimé si le modèle n'a pas de tarif connu : `~`).
+fn session_line(name: &str, s: &Value) -> String {
+    let approx = if s["partial"].as_bool() == Some(true) { "~" } else { "" };
+    format!("{name} · {approx}{} · contexte {} %", usd(s["cost"].as_f64().unwrap_or(0.0)), s["pct"].as_f64().unwrap_or(0.0))
+}
+
 fn info(app: &AppHandle, text: impl AsRef<str>) -> tauri::Result<MenuItem<tauri::Wry>> {
     MenuItem::new(app, text, false, None::<&str>)
 }
 
-fn build(app: &AppHandle, plan: Option<Value>, local: Option<Value>) -> tauri::Result<Menu<tauri::Wry>> {
+fn build(app: &AppHandle, plan: Option<Value>, local: Option<Value>, focus: Option<(String, Value)>) -> tauri::Result<Menu<tauri::Wry>> {
     let menu = Menu::new(app)?;
     let sep = || PredefinedMenuItem::separator(app);
     let usage = plan.as_ref().map(|p| &p["usage"]);
@@ -79,6 +89,9 @@ fn build(app: &AppHandle, plan: Option<Value>, local: Option<Value>) -> tauri::R
         }
         menu.append(&sep()?)?;
     }
+    if let Some((name, s)) = &focus {
+        menu.append(&info(app, session_line(name, s))?)?;
+    }
     let n = SESSIONS.load(Ordering::Relaxed);
     if n > 0 {
         menu.append(&info(app, format!("{n} session{} Claude en cours", if n > 1 { "s" } else { "" }))?)?;
@@ -98,9 +111,10 @@ pub fn refresh(app: &AppHandle) {
     std::thread::spawn(move || {
         let plan = tauri::async_runtime::block_on(crate::plan_usage());
         let local = crate::local_usage::get();
+        let focus = FOCUS.lock().unwrap().clone().and_then(|(id, name)| Some((name, crate::local_usage::session_stats(&id)?)));
         let handle = app.clone();
         let _ = app.run_on_main_thread(move || {
-            if let (Some(tray), Ok(menu)) = (handle.tray_by_id("pet-claude"), build(&handle, plan, local)) {
+            if let (Some(tray), Ok(menu)) = (handle.tray_by_id("pet-claude"), build(&handle, plan, local, focus)) {
                 let _ = tray.set_menu(Some(menu));
             }
         });

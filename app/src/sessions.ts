@@ -1,5 +1,6 @@
 import type { Check } from "./celebrate";
 import type { Streak } from "./nervous";
+import type { Stats } from "./stats";
 // Les sessions Claude Code ouvertes, reconnues grâce au session_id et au cwd que chaque hook envoie.
 export type Session = {
   id: string;
@@ -12,6 +13,9 @@ export type Session = {
   files: Set<string>; // fichiers modifiés (Edit/Write…) pendant le tour en cours
   attention: boolean; // Claude attend l'utilisateur (Notification) ou a échoué : le pet prend la couleur de cette session
   said: string; // dernier message de Claude dans cette session, pour le relire en changeant de session
+  stats: Stats | null; // coût et contexte de la session (cf. stats.ts)
+  statsAt: number;
+  warned: boolean; // déjà prévenu que le contexte approche de la compaction
   red: Check | null; // dernier test ou build en échec : le prochain succès du même genre se fête
   streak: Streak | null; // échecs consécutifs d'une même commande
   diff: number | null; // lignes non commitées dans le dossier du projet (insertions + suppressions)
@@ -29,7 +33,7 @@ export const ignored = new Set<string>();
 export function touch(id: string, cwd?: string | null): Session {
   let s = sessions.get(id);
   if (!s) {
-    s = { id, cwd: cwd ?? "", order: ++counter, lastSeen: 0, busy: false, tools: 0, failed: false, files: new Set(), attention: false, said: "", red: null, streak: null, diff: null, diffAt: 0, last: null, app: null };
+    s = { id, cwd: cwd ?? "", order: ++counter, lastSeen: 0, busy: false, tools: 0, failed: false, files: new Set(), attention: false, said: "", stats: null, statsAt: 0, warned: false, red: null, streak: null, diff: null, diffAt: 0, last: null, app: null };
     sessions.set(id, s);
   }
   if (cwd) s.cwd = cwd;
