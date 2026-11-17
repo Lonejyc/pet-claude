@@ -200,9 +200,15 @@ fn get_settings() -> serde_json::Value {
 /// Enregistre et prévient toutes les fenêtres (le pet applique les réglages en direct).
 #[tauri::command]
 fn save_settings(app: tauri::AppHandle, settings: serde_json::Value) -> Result<(), String> {
+    // un raccourci invalide est refusé avant d'écrire quoi que ce soit
+    let accel = settings["chatShortcut"].as_str().unwrap_or_default().to_string();
+    if !accel.is_empty() {
+        shortcut::parse(&accel)?;
+    }
     setup::write_settings(&settings)?;
-    shortcut::apply(&app, setup::read_settings()["chatShortcut"].as_str().unwrap_or_default());
-    app.emit("settings", setup::read_settings()).map_err(|e| e.to_string())
+    let registered = shortcut::apply(&app, &accel);
+    app.emit("settings", setup::read_settings()).map_err(|e| e.to_string())?;
+    registered
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -229,7 +235,9 @@ pub fn run() {
             allow_offscreen(&app.get_webview_window("main").unwrap());
             key_window_only_when_chatting(&app.get_webview_window("main").unwrap());
             menu_bar_icon(app)?;
-            shortcut::apply(app.handle(), setup::read_settings()["chatShortcut"].as_str().unwrap_or_default());
+            if let Err(e) = shortcut::apply(app.handle(), setup::read_settings()["chatShortcut"].as_str().unwrap_or_default()) {
+                eprintln!("{e}");
+            }
             mic::watch(app.handle().clone());
             server::listen(app.handle().clone());
             native::pointer_loop(app.get_webview_window("main").unwrap());

@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { accelFromEvent, DEFAULT_SHORTCUT, formatAccel } from "./accelerator";
 import { EMPTY, isUnlocked, progress, type Counters } from "./achievements";
 import { ACCESSORIES, COLORS } from "./skins";
 
@@ -21,12 +22,11 @@ const fields = {
   sound: $<HTMLInputElement>("sound"),
   soundMode: $<HTMLSelectElement>("soundMode"),
   volume: $<HTMLInputElement>("volume"),
-  chatShortcut: $<HTMLSelectElement>("chatShortcut"),
   stealth: $<HTMLInputElement>("stealth"),
   petScale: $<HTMLInputElement>("petScale"),
   emotes: $<HTMLInputElement>("emotes"),
-  emoteEverySec: $<HTMLInputElement>("emoteEverySec"),
   skinAccessory: $<HTMLSelectElement>("skinAccessory"),
+  emoteEverySec: $<HTMLInputElement>("emoteEverySec"),
 };
 const swatches = $("skin-colors");
 for (const [name, { label, shades }] of Object.entries(COLORS)) {
@@ -34,7 +34,20 @@ for (const [name, { label, shades }] of Object.entries(COLORS)) {
   radio.style.setProperty("--c", shades.front);
   swatches.append(radio);
 }
-for (const [name, label] of Object.entries(ACCESSORIES)) fields.skinAccessory.add(new Option(label, name));
+// Accessoires : ceux à débloquer sont rangés à la fin de la liste, grisés, avec leur progression.
+// (une liste native n'accepte que du texte : pas d'icône dans ses options)
+let accessory = "none";
+const select = fields.skinAccessory;
+let counters: Counters = EMPTY;
+function renderAccessories() {
+  const all = Object.keys(ACCESSORIES);
+  const unlocked = all.filter((a) => isUnlocked(a, counters) || a === accessory);
+  select.replaceChildren(
+    ...all.filter((a) => unlocked.includes(a)).map((a) => new Option(ACCESSORIES[a], a)),
+    ...all.filter((a) => !unlocked.includes(a)).map((a) => Object.assign(new Option(`${ACCESSORIES[a]} · verrouillé (${progress(a, counters)})`, a), { disabled: true })),
+  );
+  select.value = accessory;
+}
 const skinColor = () => document.querySelector<HTMLInputElement>("input[name=skinColor]:checked")?.value ?? "orange";
 const fmtSeconds = (s: number) => (s >= 120 ? `${Math.round(s / 60)} min` : `${s} s`);
 
@@ -46,13 +59,13 @@ function readForm(): Settings {
     sound: fields.sound.checked,
     soundMode: fields.soundMode.value as Settings["soundMode"],
     volume: Number(fields.volume.value),
-    chatShortcut: fields.chatShortcut.value,
+    chatShortcut,
     stealth: fields.stealth.checked,
     petScale: Number(fields.petScale.value),
     emotes: fields.emotes.checked,
     emoteEverySec: Number(fields.emoteEverySec.value),
     skinColor: skinColor(),
-    skinAccessory: fields.skinAccessory.value,
+    skinAccessory: select.value,
   };
 }
 
@@ -68,12 +81,47 @@ function showOutputs() {
   fields.emoteEverySec.disabled = !s.emotes;
 }
 
-for (const input of [...Object.values(fields), swatches]) {
-  input.addEventListener("input", () => {
-    showOutputs();
-    invoke("save_settings", { settings: readForm() }).catch(fail);
-  });
+function save() {
+  showOutputs();
+  invoke("save_settings", { settings: readForm() }).then(() => (error.hidden = true), fail);
 }
+for (const input of [...Object.values(fields), swatches]) input.addEventListener("input", save);
+
+// Raccourci du mini-chat : on clique, puis on tape sa combinaison (au moins ⌃, ⌥ ou ⌘). Défaut : ⌃⌥ Espace.
+let chatShortcut = DEFAULT_SHORTCUT;
+let recording = false;
+const shortcutBtn = $<HTMLButtonElement>("chatShortcutBtn");
+function renderShortcut() {
+  recording = false;
+  shortcutBtn.textContent = formatAccel(chatShortcut);
+  shortcutBtn.classList.remove("recording");
+  $("chatShortcutReset").hidden = chatShortcut === DEFAULT_SHORTCUT;
+  $("chatShortcutOff").hidden = chatShortcut === "";
+}
+function setShortcut(accel: string) {
+  chatShortcut = accel;
+  renderShortcut();
+  save();
+}
+shortcutBtn.addEventListener("click", () => {
+  recording = true;
+  shortcutBtn.textContent = "Tape ta combinaison…";
+  shortcutBtn.classList.add("recording");
+});
+$("chatShortcutReset").addEventListener("click", () => setShortcut(DEFAULT_SHORTCUT));
+$("chatShortcutOff").addEventListener("click", () => setShortcut(""));
+shortcutBtn.addEventListener("blur", () => recording && renderShortcut());
+window.addEventListener(
+  "keydown",
+  (e) => {
+    if (!recording) return;
+    e.preventDefault();
+    if (e.key === "Escape") return renderShortcut();
+    const accel = accelFromEvent(e);
+    if (accel) setShortcut(accel);
+  },
+  true,
+);
 
 // ---- système : lancement au démarrage, personnalité globale, hooks
 const login = $<HTMLInputElement>("login");
@@ -114,19 +162,15 @@ $("quit").addEventListener("click", () => invoke("quit"));
   fields.sound.checked = s.sound;
   fields.soundMode.value = s.soundMode;
   fields.volume.value = String(s.volume);
-  fields.chatShortcut.value = s.chatShortcut;
+  chatShortcut = s.chatShortcut ?? DEFAULT_SHORTCUT;
+  renderShortcut();
   fields.stealth.checked = s.stealth;
   fields.petScale.value = String(s.petScale ?? 1);
   fields.emotes.checked = s.emotes;
   fields.emoteEverySec.value = String(s.emoteEverySec);
-  fields.skinAccessory.value = s.skinAccessory;
-  // accessoires à débloquer : grisés avec leur progression, sauf celui déjà choisi
-  const counters = { ...EMPTY, ...(await invoke<Counters>("get_achievements")) };
-  for (const option of fields.skinAccessory.options) {
-    if (isUnlocked(option.value, counters) || option.value === s.skinAccessory) continue;
-    option.disabled = true;
-    option.textContent = `🔒 ${ACCESSORIES[option.value]} (${progress(option.value, counters)})`;
-  }
+  accessory = s.skinAccessory;
+  counters = { ...EMPTY, ...(await invoke<Counters>("get_achievements")) };
+  renderAccessories();
   for (const r of swatches.querySelectorAll<HTMLInputElement>("input")) r.checked = r.value === s.skinColor;
   showOutputs();
   await refreshStatus();

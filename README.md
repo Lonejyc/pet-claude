@@ -25,7 +25,7 @@ s'inquiète quand une commande échoue, et te répond dans une bulle.</p>
 - **Valide tes permissions en un clic** : quand Claude Code demande l'autorisation d'utiliser un outil, une bulle affiche l'outil et la commande
   (tronquée) avec « Autoriser / Refuser ». Sans clic sous 20 s, la boîte de dialogue habituelle de ton terminal reprend la main : le pet ne dit
   jamais « oui » à ta place. Seul un clic dans la fenêtre du pet peut approuver (aucune route du serveur local ne le permet). Détails : `docs/spike-permissions.md`.
-- **Raccourci global** (⌃⌥ Espace par défaut, modifiable ou désactivable dans les Réglages) : ouvre le mini-chat au centre de l'écran où se trouve ta souris,
+- **Raccourci global** (⌃⌥ Espace par défaut ; dans les Réglages, clique le champ puis tape ta propre combinaison, avec au moins ⌃, ⌥ ou ⌘ ; ↺ revient au défaut, ✕ désactive) : ouvre le mini-chat au centre de l'écran où se trouve ta souris,
   même si le pet est masqué ou sur un autre écran ; il se recache à la fermeture du chat. Le raccourci n'enregistre aucune frappe : seule cette combinaison est écoutée.
 - **Glisser-déposer** : dépose une capture d'écran (png, jpg, gif, webp ≤ 8 Mo) ou un log / fichier texte ou de code (≤ 2 Mo) sur le pet ; le mini-chat s'ouvre avec le fichier joint
   (puce 📎, un clic la retire). Valider sans rien taper envoie une question par défaut. **Le fichier est lu par Claude**, donc envoyé à Anthropic comme tout ce que lit Claude Code :
@@ -155,7 +155,7 @@ et un fichier déposé sur le pet est lu par Claude.
   estimation (grille de tarifs copiée à la main, modèles inconnus comptés sans coût), pas ta facture.
 - Un seul pet à la fois : si deux instances tournent (par ex. version de développement + installée), seule la première reçoit les hooks.
 - Les accessoires du pet (clavier, marteau, enclume, jumelles) sont positionnés « à l'œil » et peuvent légèrement traverser le corps.
-- Le raccourci global peut être déjà pris par une autre app ou par macOS : change-le dans les Réglages. Le glisser-déposer ne prend pas en charge les liens (URL).
+- Le raccourci global peut être déjà pris par une autre app ou par macOS (les Réglages affichent alors une erreur) : choisis-en un autre. Le glisser-déposer ne prend pas en charge les liens (URL).
 - Le focus au clic sur la bulle se fait par app (pas par onglet de terminal). Le mode furtif repose sur l'usage du micro : une dictée vocale compte aussi, un partage d'écran sans micro non.
 - La taille de la fenêtre de contexte n'est pas dans les transcripts : elle est supposée à 200 000 tokens (1 000 000 au-delà).
 

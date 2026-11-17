@@ -28,15 +28,14 @@
         <input id="sleepAfterSec" type="range" min="10" max="600" step="10" />
       </label>
       <label class="row switch"><span>Confettis après un gros travail</span><input id="confetti" type="checkbox" switch /></label>
-      <label class="row">
-        <span>Raccourci du mini-chat <small>Ouvre le chat au centre de l'écran, même pet masqué</small></span>
-        <select id="chatShortcut">
-          <option value="Control+Alt+Space">⌃⌥ Espace</option>
-          <option value="Super+Shift+Space">⌘⇧ Espace</option>
-          <option value="Super+Shift+C">⌘⇧ C (pris par d'autres apps)</option>
-          <option value="">Désactivé</option>
-        </select>
-      </label>
+      <div class="row">
+        <span>Raccourci du mini-chat <small id="shortcut-hint">Ouvre le chat au centre de l'écran, même pet masqué</small></span>
+        <span class="shortcut">
+          <button id="chatShortcutBtn" type="button" title="Cliquer, puis taper ta combinaison (Échap pour annuler)"></button>
+          <button id="chatShortcutReset" type="button" title="Revenir au raccourci par défaut">↺</button>
+          <button id="chatShortcutOff" type="button" title="Désactiver le raccourci">✕</button>
+        </span>
+      </div>
       <label class="row">
         <span>Taille du pet <output id="petScale-out"></output></span>
         <input id="petScale" type="range" min="0.7" max="1.5" step="0.05" />
