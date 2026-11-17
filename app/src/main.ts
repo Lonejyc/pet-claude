@@ -177,6 +177,12 @@ document.addEventListener("keydown", (e) => {
 });
 setInterval(() => (perm.expire() || perm.current()) && renderPerm(), 1000);
 
+// Raccourci clavier global (cf. shortcut.rs) : Rust a déjà placé le pet au centre de l'écran actif.
+listen("open-chat", () => {
+  wake();
+  openChat();
+});
+
 // Le pet reste "au travail" tant qu'une autre session a un outil en cours.
 const settle = () => setState(anyBusy() ? "working" : "idle");
 
@@ -665,7 +671,7 @@ chips.addEventListener("mousedown", (e) => e.preventDefault());
 chatInput.addEventListener("blur", () => setTimeout(closeChat, 150));
 
 // Réglages (fenêtre de réglages) : lus au démarrage, puis appliqués en direct à chaque changement.
-type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; soundMode: "all" | "alerts"; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
+type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; soundMode: "all" | "alerts"; chatShortcut: string; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
 function applySettings(s: Settings) {
   COOLDOWN_MS = s.cooldownSec * 1000;
   SLEEP_AFTER_MS = s.sleepAfterSec * 1000;

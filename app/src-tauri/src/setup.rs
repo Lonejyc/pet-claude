@@ -225,7 +225,7 @@ fn settings_path(home: &Path) -> PathBuf {
 }
 
 fn default_settings() -> Value {
-    json!({ "cooldownSec": 12, "sleepAfterSec": 60, "confetti": true, "sound": true, "soundMode": "all", "volume": 1.0, "emotes": false, "emoteEverySec": 30, "skinColor": "orange", "skinAccessory": "none" })
+    json!({ "cooldownSec": 12, "sleepAfterSec": 60, "confetti": true, "sound": true, "soundMode": "all", "chatShortcut": "Control+Alt+Space", "volume": 1.0, "emotes": false, "emoteEverySec": 30, "skinColor": "orange", "skinAccessory": "none" })
 }
 
 pub fn read_settings() -> Value {

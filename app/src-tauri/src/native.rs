@@ -103,6 +103,9 @@ pub fn set_chat_open(window: WebviewWindow, open: bool) {
         // rend la main à l'application précédente (le terminal)
         app.hide(None);
         w.orderFrontRegardless();
+        if SUMMONED_FROM_HIDDEN.swap(false, Ordering::Relaxed) {
+            toggle_pet(&window);
+        }
     }
 }
 
@@ -137,6 +140,32 @@ pub fn set_sleeping(sleeping: bool) {
 }
 
 /// Masque ou ré-affiche le pet ; retourne true s'il est maintenant visible.
+/// Le pet était masqué quand le raccourci l'a fait apparaître : on le recache à la fermeture du chat.
+static SUMMONED_FROM_HIDDEN: AtomicBool = AtomicBool::new(false);
+
+/// Centre `w` x `h` sur l'écran qui contient le pointeur (zone utile, sans barre de menus ni Dock), sinon sur le premier écran.
+fn center_on(works: &[Rect], mouse: (f64, f64), w: f64, h: f64) -> Option<(f64, f64)> {
+    let r = works.iter().find(|r| mouse.0 >= r.x && mouse.0 < r.x + r.w && mouse.1 >= r.y && mouse.1 < r.y + r.h).or(works.first())?;
+    Some((r.x + (r.w - w) / 2.0, r.y + (r.h - h) / 2.0))
+}
+
+/// Raccourci global : fait apparaître le pet (même masqué) au centre de l'écran actif. Le front ouvre ensuite le chat.
+pub fn summon(window: &WebviewWindow) {
+    if HIDDEN.load(Ordering::Relaxed) {
+        toggle_pet(window);
+        SUMMONED_FROM_HIDDEN.store(true, Ordering::Relaxed);
+    }
+    let mtm = main_thread();
+    let ph = primary_height(mtm);
+    let works: Vec<Rect> = NSScreen::screens(mtm).iter().map(|s| flip(s.visibleFrame(), ph)).collect();
+    let m = NSEvent::mouseLocation();
+    let w = ns_window(window);
+    let size = w.frame().size;
+    if let Some((x, y)) = center_on(&works, (m.x, ph - m.y), size.width, size.height) {
+        w.setFrameTopLeftPoint(NSPoint::new(x, ph - y));
+    }
+}
+
 pub fn toggle_pet(window: &WebviewWindow) -> bool {
     let show = HIDDEN.load(Ordering::Relaxed);
     HIDDEN.store(!show, Ordering::Relaxed);
@@ -197,7 +226,25 @@ pub fn pointer_loop(window: WebviewWindow) {
 
 #[cfg(test)]
 mod tests {
-    use super::valid_bundle_id;
+    use super::{center_on, valid_bundle_id, Rect};
+
+    fn rect(x: f64, y: f64, w: f64, h: f64) -> Rect {
+        Rect { x, y, w, h }
+    }
+
+    #[test]
+    fn the_window_is_centered_on_the_screen_holding_the_pointer() {
+        let screens = [rect(0.0, 25.0, 1440.0, 800.0), rect(1440.0, 0.0, 1920.0, 1080.0)];
+        assert_eq!(center_on(&screens, (100.0, 100.0), 280.0, 296.0), Some((580.0, 277.0)));
+        assert_eq!(center_on(&screens, (2000.0, 500.0), 280.0, 296.0), Some((2260.0, 392.0)));
+    }
+
+    #[test]
+    fn a_pointer_outside_every_screen_falls_back_to_the_first_one() {
+        let screens = [rect(0.0, 0.0, 1000.0, 600.0)];
+        assert_eq!(center_on(&screens, (-50.0, 9999.0), 200.0, 100.0), Some((400.0, 250.0)));
+        assert_eq!(center_on(&[], (0.0, 0.0), 200.0, 100.0), None);
+    }
 
     #[test]
     fn bundle_ids_are_validated_before_reaching_open() {

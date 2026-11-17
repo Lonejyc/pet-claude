@@ -24,6 +24,8 @@ s'inquiète quand une commande échoue, et te répond dans une bulle.</p>
 - **Valide tes permissions en un clic** : quand Claude Code demande l'autorisation d'utiliser un outil, une bulle affiche l'outil et la commande
   (tronquée) avec « Autoriser / Refuser ». Sans clic sous 20 s, la boîte de dialogue habituelle de ton terminal reprend la main : le pet ne dit
   jamais « oui » à ta place. Seul un clic dans la fenêtre du pet peut approuver (aucune route du serveur local ne le permet). Détails : `docs/spike-permissions.md`.
+- **Raccourci global** (⌃⌥ Espace par défaut, modifiable ou désactivable dans les Réglages) : ouvre le mini-chat au centre de l'écran où se trouve ta souris,
+  même si le pet est masqué ou sur un autre écran ; il se recache à la fermeture du chat. Le raccourci n'enregistre aucune frappe : seule cette combinaison est écoutée.
 - **Vit** : il cligne des yeux, s'endort, se laisse prendre (il panique), se lance et rebondit sur les bords de l'écran.
 - Visible **au-dessus des apps en plein écran**, sur tous les espaces, multi-écrans.
 

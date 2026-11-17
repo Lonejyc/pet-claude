@@ -5,6 +5,7 @@ mod native;
 mod permission;
 mod server;
 mod setup;
+mod shortcut;
 
 use tauri::{Emitter, Listener, Manager};
 use tauri_nspanel::{tauri_panel, CollectionBehavior, PanelLevel, StyleMask, WebviewWindowExt};
@@ -178,6 +179,7 @@ fn get_settings() -> serde_json::Value {
 #[tauri::command]
 fn save_settings(app: tauri::AppHandle, settings: serde_json::Value) -> Result<(), String> {
     setup::write_settings(&settings)?;
+    shortcut::apply(&app, setup::read_settings()["chatShortcut"].as_str().unwrap_or_default());
     app.emit("settings", setup::read_settings()).map_err(|e| e.to_string())
 }
 
@@ -190,6 +192,7 @@ pub fn run() {
     setup::refresh_hooks_if_outdated();
     tauri::Builder::default()
         .plugin(tauri_nspanel::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .invoke_handler(tauri::generate_handler![native::screens, native::window_origin, native::set_window_origin, native::mouse, native::frontmost_app, native::focus_app, native::set_chat_open, native::set_hit_regions, native::set_sleeping, chat::ask, permission::decide, quit, open_settings_cmd, plan_usage, local_usage, toggle_pet, pet_hidden, setup_status, hooks_enable, style_enable, login_enable, get_settings, save_settings])
         .setup(|app| {
             // Accessory : pas d'icône dans le Dock, requis pour s'afficher au-dessus du plein écran.
@@ -204,6 +207,7 @@ pub fn run() {
             allow_offscreen(&app.get_webview_window("main").unwrap());
             key_window_only_when_chatting(&app.get_webview_window("main").unwrap());
             menu_bar_icon(app)?;
+            shortcut::apply(app.handle(), setup::read_settings()["chatShortcut"].as_str().unwrap_or_default());
             server::listen(app.handle().clone());
             native::pointer_loop(app.get_webview_window("main").unwrap());
             Ok(())

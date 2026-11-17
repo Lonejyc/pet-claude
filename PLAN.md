@@ -132,7 +132,10 @@ multi-couches, micro-variations aléatoires, courte réverb, mastering (compress
   Installer le hook `PermissionRequest` (`timeout: 30`, `curl -s -m 25`, migration incluse), puis bulle avec outil et commande tronquée (`textContent`), décompte, raccourcis (Entrée/Échap), file d'attente, retour au dialogue du terminal à l'expiration.
   *Accept.* : test vitest de la file et du décompte ; scénario réel avec un `rm` ou un `git push` simulé ; `[?]` pour la vérification en session interactive.
 
-- [ ] **T07 — Raccourci clavier global (⌘⇧C) → mini-chat au centre de l'écran actif** dep: T00
+- [?] **T07 — Raccourci clavier global → mini-chat au centre de l'écran actif** dep: T00
+  *Fait (commit `feat(T07)`)* : dépendance `tauri-plugin-global-shortcut` (licences régénérées) ; `shortcut.rs` (enregistrement au démarrage et à chaque sauvegarde des réglages) ; `native::summon` + `center_on` (testé : écran du pointeur, repli sur le premier écran) ; pet masqué → affiché puis recaché à la fermeture du chat ; réglage `chatShortcut` (3 endroits + menu). **Écart** : le défaut est ⌃⌥ Espace et non ⌘⇧C, qui est déjà pris par Chrome, VS Code, Xcode… (⌘⇧C reste proposé dans le menu). Enregistrement vérifié dans le log du pet de dev pour deux préréglages.
+  **Non vérifié** : le déclenchement. Des frappes simulées (osascript, CGEvent) n'ont pas fait bouger la fenêtre (position relue via CoreGraphics) : soit les événements synthétiques n'atteignent pas les raccourcis globaux, soit ⌃⌥Espace est capté par macOS (changement de source de saisie).
+  *À valider par l'humain* : appuyer sur ⌃⌥Espace (puis ⌘⇧Espace si rien) : le pet vient au centre de l'écran de la souris et le chat s'ouvre ; Échap ferme ; fonctionne pet masqué et sur un autre écran ; si ⌃⌥Espace est pris par macOS, dis-le et on change le défaut.
   Plugin `tauri-plugin-global-shortcut` (nouvelle dépendance justifiée : pas de natif simple) + capability.
   Fait apparaître le chat même pet caché/autre écran ; réglage pour désactiver/changer le raccourci.
   *Accept.* : fonctionne pet caché, écran secondaire, plein écran d'une autre app ; pas de conflit détecté ; `Échap` ferme.

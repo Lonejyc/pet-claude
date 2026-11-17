@@ -7,9 +7,9 @@ Fichier généré par `scripts/third-party.py` ; il liste les crates réellement
 
 | Licence | Crates |
 |---|---|
-| MIT OR Apache-2.0 | 120 |
+| MIT OR Apache-2.0 | 122 |
 | MIT | 39 |
-| Apache-2.0 OR MIT | 25 |
+| Apache-2.0 OR MIT | 28 |
 | Unicode-3.0 | 18 |
 | Zlib OR Apache-2.0 OR MIT | 15 |
 | MIT/Apache-2.0 | 8 |
@@ -120,6 +120,7 @@ Fichier généré par `scripts/third-party.py` ; il liste les crates réellement
 | getrandom | 0.3.4 | MIT OR Apache-2.0 |
 | getrandom | 0.4.3 | MIT OR Apache-2.0 |
 | glob | 0.3.4 | MIT OR Apache-2.0 |
+| global-hotkey | 0.8.0 | Apache-2.0 OR MIT |
 | hashbrown | 0.12.3 | MIT OR Apache-2.0 |
 | hashbrown | 0.17.1 | MIT OR Apache-2.0 |
 | heck | 0.5.0 | MIT OR Apache-2.0 |
@@ -148,6 +149,7 @@ Fichier généré par `scripts/third-party.py` ; il liste les crates réellement
 | jiff-core | 0.1.1 | Unlicense OR MIT |
 | json-patch | 4.2.0 | MIT/Apache-2.0 |
 | jsonptr | 0.7.1 | MIT OR Apache-2.0 |
+| keyboard-types | 0.7.0 | MIT OR Apache-2.0 |
 | keyboard-types | 0.8.3 | MIT OR Apache-2.0 |
 | libc | 0.2.190 | MIT OR Apache-2.0 |
 | litemap | 0.8.3 | Unicode-3.0 |
@@ -250,9 +252,11 @@ Fichier généré par `scripts/third-party.py` ; il liste les crates réellement
 | tauri-codegen | 2.7.2 | Apache-2.0 OR MIT |
 | tauri-macros | 2.7.2 | Apache-2.0 OR MIT |
 | tauri-nspanel | 2.1.1 | MIT OR Apache-2.0 |
+| tauri-plugin | 2.7.3 | Apache-2.0 OR MIT |
+| tauri-plugin-global-shortcut | 2.4.1 | Apache-2.0 OR MIT |
 | tauri-runtime | 2.12.1 | Apache-2.0 OR MIT |
 | tauri-runtime-wry | 2.12.1 | Apache-2.0 OR MIT |
-| tauri-utils | 2.10.1 | Apache-2.0 OR MIT |
+| tauri-utils | 2.10.3 | Apache-2.0 OR MIT |
 | tauri-winres | 0.3.6 | MIT |
 | tendril | 0.5.1 | MIT OR Apache-2.0 |
 | thiserror | 2.0.21 | MIT OR Apache-2.0 |
@@ -272,6 +276,7 @@ Fichier généré par `scripts/third-party.py` ; il liste les crates réellement
 | typeid | 1.0.3 | MIT OR Apache-2.0 |
 | typenum | 1.20.1 | MIT OR Apache-2.0 |
 | unicode-ident | 1.0.27 | (MIT OR Apache-2.0) AND Unicode-3.0 |
+| unicode-segmentation | 1.13.3 | MIT OR Apache-2.0 |
 | url | 2.5.8 | MIT OR Apache-2.0 |
 | urlpattern | 0.6.0 | MIT |
 | utf8_iter | 1.0.4 | Apache-2.0 OR MIT |

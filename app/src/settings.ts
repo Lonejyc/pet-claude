@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { ACCESSORIES, COLORS } from "./skins";
 
-type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; soundMode: "all" | "alerts"; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
+type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; soundMode: "all" | "alerts"; chatShortcut: string; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
 type Status = { hooks: boolean; style: boolean; login: boolean; installed: boolean };
 
 const $ = <T extends HTMLElement>(id: string) => document.querySelector<T>(`#${id}`)!;
@@ -20,6 +20,7 @@ const fields = {
   sound: $<HTMLInputElement>("sound"),
   soundMode: $<HTMLSelectElement>("soundMode"),
   volume: $<HTMLInputElement>("volume"),
+  chatShortcut: $<HTMLSelectElement>("chatShortcut"),
   emotes: $<HTMLInputElement>("emotes"),
   emoteEverySec: $<HTMLInputElement>("emoteEverySec"),
   skinAccessory: $<HTMLSelectElement>("skinAccessory"),
@@ -42,6 +43,7 @@ function readForm(): Settings {
     sound: fields.sound.checked,
     soundMode: fields.soundMode.value as Settings["soundMode"],
     volume: Number(fields.volume.value),
+    chatShortcut: fields.chatShortcut.value,
     emotes: fields.emotes.checked,
     emoteEverySec: Number(fields.emoteEverySec.value),
     skinColor: skinColor(),
@@ -106,6 +108,7 @@ $("quit").addEventListener("click", () => invoke("quit"));
   fields.sound.checked = s.sound;
   fields.soundMode.value = s.soundMode;
   fields.volume.value = String(s.volume);
+  fields.chatShortcut.value = s.chatShortcut;
   fields.emotes.checked = s.emotes;
   fields.emoteEverySec.value = String(s.emoteEverySec);
   fields.skinAccessory.value = s.skinAccessory;
