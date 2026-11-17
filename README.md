@@ -43,6 +43,7 @@ s'inquiète quand une commande échoue, et te répond dans une bulle.</p>
 - **Coût et contexte de la session** : au survol du pet (« boutique · 1,84 $ · contexte 68 % ») et dans le menu de la barre de menus. Calculés en local depuis le transcript de la session
   (`~/.claude/projects/…`) ; une alerte douce apparaît quand le contexte atteint 80 % (la compaction automatique approche). Le coût est une estimation à partir d'une grille de tarifs
   embarquée ; la taille de la fenêtre n'étant pas dans le transcript, elle est supposée à 200 000 tokens (1 000 000 dès que le contexte dépasse 200 000).
+- **Taille réglable** : Réglages > Apparence, de 70 % à 150 %.
 - **Succès locaux** : l'usage réel débloque des accessoires, à choisir dans Réglages > Apparence : casque de chantier (100 fichiers modifiés), lunettes de soleil
   (10 tests ou builds réparés), auréole (1 session sans erreur d'outil), couronne (3 sessions sans erreur). Les compteurs sont stockés dans un fichier local
   (`achievements.json`, dossier de l'app), jamais envoyés ; un accessoire déjà choisi reste affiché même s'il est à débloquer.
