@@ -188,7 +188,9 @@ multi-couches, micro-variations aléatoires, courte réverb, mastering (compress
 
 ### Phase 6 — Ergonomie macOS
 
-- [ ] **T14 — Mode furtif pendant visio / partage d'écran** dep: T00
+- [?] **T14 — Mode furtif pendant visio / partage d'écran** dep: T00
+  *Fait (commit `feat(T14)`)* : `mic.rs` lit le drapeau CoreAudio `DeviceIsRunningSomewhere` du micro par défaut (FFI, toutes les 3 s, événement `mic` au changement) ; réglage `stealth` (défaut activé, 3 endroits + interrupteur) ; pendant un appel : pet à 55 %, translucide, sons coupés (alertes comprises), plus de bulles ni de confettis ; la carte de permission reste visible. **Écart** : détection par l'usage du micro et non par une liste d'apps (bundle IDs) : elle couvre aussi Meet dans un navigateur, mais une dictée vocale compte aussi ; le partage d'écran seul n'est pas détecté ; pas de « perchage » en haut de l'écran (le pet rétrécit sur place). **Vérifié** : appel CoreAudio réel (renvoie faux, micro libre), sélecteurs testés ; scénario Chrome headless (faux Tauri) : furtif activé/désactivé, pas de bulle ni de confettis pendant l'appel, carte de permission visible (capture regardée). **Non vérifié** : le cas « micro réellement utilisé » (lancer un micro demanderait une autorisation système).
+  *À valider par l'humain* : lancer un appel (Zoom/Meet/Teams) : sous 3 s le pet rétrécit et se tait ; raccrocher : il revient ; décocher le réglage : plus de changement.
   Détecter Zoom/Meet/Teams/Slack Huddle (`NSWorkspace` runningApplications côté `objc2`) ; le pet se réduit/se perche
   en haut ; réglage on/off. Meet = navigateur : limiter à la détection d'apps natives, documenter la limite.
   *Accept.* : test de la liste de bundle IDs ; bascule automatique au lancement/fermeture de Zoom.

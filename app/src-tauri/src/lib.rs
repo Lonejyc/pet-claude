@@ -2,6 +2,7 @@ mod chat;
 mod gitdiff;
 mod local_usage;
 mod menu;
+mod mic;
 mod native;
 mod permission;
 mod server;
@@ -209,6 +210,7 @@ pub fn run() {
             key_window_only_when_chatting(&app.get_webview_window("main").unwrap());
             menu_bar_icon(app)?;
             shortcut::apply(app.handle(), setup::read_settings()["chatShortcut"].as_str().unwrap_or_default());
+            mic::watch(app.handle().clone());
             server::listen(app.handle().clone());
             native::pointer_loop(app.get_webview_window("main").unwrap());
             Ok(())

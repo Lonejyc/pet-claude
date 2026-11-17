@@ -38,6 +38,8 @@ s'inquiète quand une commande échoue, et te répond dans une bulle.</p>
   et il tremble plus fort quand la même commande échoue 3 fois de suite.
 - **Fête les bons moments** : confettis après un `git commit` réussi ; petit saut et ta-da quand un test ou un build repasse au vert après un échec.
   Il reconnaît ces commandes dans ce que Claude exécute (Bash) ; rien n'est envoyé ni enregistré.
+- **Mode furtif** : pendant un appel (ton micro est utilisé par Zoom, Meet, Teams, Slack Huddle, FaceTime…), le pet devient tout petit et translucide, se tait et ne parle plus ;
+  les demandes de permission restent visibles. Il lit seulement le drapeau CoreAudio « le micro est utilisé » : aucun son n'est capté. Désactivable dans les Réglages.
 - **Vit** : il cligne des yeux, s'endort, se laisse prendre (il panique), se lance et rebondit sur les bords de l'écran.
 - Visible **au-dessus des apps en plein écran**, sur tous les espaces, multi-écrans.
 

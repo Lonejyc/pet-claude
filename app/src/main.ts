@@ -48,6 +48,7 @@ const TOOL_KINDS: Record<string, string> = {
 const CONFETTI_MIN_TOOLS = 3;
 
 function confetti() {
+  if (stealthActive()) return;
   for (let i = 0; i < 24; i++) {
     const c = document.createElement("div");
     c.className = "confetti";
@@ -89,6 +90,7 @@ const firstSentence = (text: string) => {
 
 // Texte tapé lettre par lettre ; le pet "parle" (petits sauts) tant qu'il tape.
 function say(text: string, session?: Session, extra = "") {
+  if (stealthActive()) return settle(); // pendant un appel : pas de bulle
   const full = firstSentence(text) + (extra ? ` · ${extra}` : "");
   // pastille du projet seulement s'il y a plusieurs sessions : sinon c'est du bruit
   bubbleTag.hidden = !session || count() < 2;
@@ -873,14 +875,31 @@ chips.addEventListener("mousedown", (e) => e.preventDefault());
 chatInput.addEventListener("blur", () => setTimeout(closeChat, 150));
 
 // Réglages (fenêtre de réglages) : lus au démarrage, puis appliqués en direct à chaque changement.
-type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; soundMode: "all" | "alerts"; chatShortcut: string; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
+type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; soundMode: "all" | "alerts"; chatShortcut: string; stealth: boolean; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
+// Mode furtif : pendant un appel (micro utilisé, cf. mic.rs) le pet rétrécit, se tait et ne fait plus de bulles ni de confettis.
+// Les demandes de permission restent visibles : elles bloquent Claude.
+let STEALTH = true;
+let inCall = false;
+let soundSettings = { enabled: true, volume: 1, mode: "all" as "all" | "alerts" };
+const stealthActive = () => STEALTH && inCall;
+function renderStealth() {
+  document.body.classList.toggle("stealth", stealthActive());
+  setSoundConfig({ ...soundSettings, enabled: soundSettings.enabled && !stealthActive() });
+}
+listen<boolean>("mic", ({ payload }) => {
+  inCall = payload;
+  renderStealth();
+});
+
 function applySettings(s: Settings) {
   COOLDOWN_MS = s.cooldownSec * 1000;
   SLEEP_AFTER_MS = s.sleepAfterSec * 1000;
   EMOTES = s.emotes;
   EMOTE_EVERY_MS = s.emoteEverySec * 1000;
   CONFETTI = s.confetti;
-  setSoundConfig({ enabled: s.sound, volume: s.volume, mode: s.soundMode });
+  STEALTH = s.stealth;
+  soundSettings = { enabled: s.sound, volume: s.volume, mode: s.soundMode };
+  renderStealth();
   setSkin(pet, s.skinColor, s.skinAccessory);
 }
 invoke<Settings>("get_settings").then(applySettings);
