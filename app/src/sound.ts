@@ -133,12 +133,8 @@ const bell = (f: number, delay: number, ms: number) => {
 const VOICE_NOTES = [392, 440, 523, 587, 659];
 let lastVoice = 0;
 
-// Touches : trois claquements différents, jamais le même deux fois de suite.
-const KEYS = [
-  { click: 2800, thock: 150 },
-  { click: 3400, thock: 180 },
-  { click: 4000, thock: 210 },
-];
+// Touches : trois claquements différents (fréquence du clic), jamais le même deux fois de suite.
+const KEYS = [2000, 2400, 2900];
 let lastKey = 0;
 
 const raw = {
@@ -185,13 +181,12 @@ const raw = {
     voice({ from: 230 * pitch, to: 140 * pitch, ms: 80, type: "sine", vol: 0.13, attack: 0.001, wet: 0.1 });
     voice({ from: 460, to: 360, ms: 40, type: "sine", vol: 0.03, attack: 0.001 });
   },
-  // frappe de clavier mécanique : clic de bruit + « thock » grave
+  // frappe de clavier (calée sur un enregistrement) : clic sec de ~4 ms (1,5-4 kHz), puis « clac » plus faible ~9 ms après (touche en butée), aucun grave
   key: () => {
     lastKey = pickNot(KEYS.length, lastKey);
-    const k = KEYS[lastKey];
-    noiseHit({ ms: 14, vol: 0.05, filter: "bandpass", freq: jitter(k.click * pitch, 0.05), q: 1.2 });
-    voice({ from: jitter(k.thock * pitch, 0.05), to: k.thock * pitch * 0.65, ms: 45, type: "sine", vol: 0.03, attack: 0.001 });
-    voice({ from: 1800, to: 900, ms: 12, type: "square", vol: 0.008, lowpass: 3000 });
+    const f = jitter(KEYS[lastKey] * pitch, 0.05);
+    noiseHit({ ms: 5, vol: 0.09, filter: "bandpass", freq: f, q: 0.8, attack: 0.0005 });
+    noiseHit({ ms: 7, vol: 0.05, filter: "bandpass", freq: f * 0.85, q: 0.8, attack: 0.0005, delay: jitter(9, 0.2) });
   },
   // cymbales : souffle aigu qui s'éteint lentement + partiels métalliques inharmoniques
   crash: () => {
