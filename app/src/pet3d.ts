@@ -9,6 +9,7 @@ const DARK = { front: "#2b2b33", top: "#44444f", right: "#1d1d22", left: "#24242
 const GREY = { front: "#6b6f7a", top: "#c9ccd6", right: "#4b4e57", left: "#5a5d67", back: "#3f424a", bottom: "#2e3036" };
 const KEY = { front: "#d8dbe3", top: "#f2f3f7", right: "#a9adb8", left: "#b7bbc6", back: "#9a9ea9", bottom: "#7d818c" };
 const STEEL = { front: "#4a4d57", top: "#8c909c", right: "#34363d", left: "#3d4048", back: "#2b2d33", bottom: "#1f2024" };
+const YELLOW = { front: "#f2c230", top: "#ffdb5e", right: "#c79a18", left: "#d9a91f", back: "#b58a14", bottom: "#8f6d0f" };
 const WOOD = { front: "#a0703a", top: "#b98450", right: "#7d5527", left: "#8a5f2e", back: "#6f4a22", bottom: "#5a3c1a" };
 
 // Visage = le SVG d'origine, rogné sur la face avant du corps (mêmes coordonnées, mêmes classes CSS).
@@ -121,6 +122,18 @@ export function buildPet(rig: HTMLElement) {
     { x: 57, y: -7, w: 36, h: 2.5, d: 4, z: -14, shades: GOLD },
     { x: 55, y: -7, w: 4, h: 2.5, d: 28, shades: GOLD },
     { x: 91, y: -7, w: 4, h: 2.5, d: 28, shades: GOLD },
+  ]);
+  // casque de chantier (débloqué par 100 fichiers modifiés) : calotte, bord et arête
+  accessory("acc-hardhat", [
+    { x: 48, y: 10, w: 54, h: 5, d: 40, shades: YELLOW },
+    { x: 55, y: -2, w: 40, h: 13, d: 30, shades: YELLOW },
+    { x: 71, y: -6, w: 8, h: 4, d: 30, shades: YELLOW },
+  ]);
+  // lunettes de soleil (10 tests ou builds réparés) : deux verres sombres devant les yeux et leur pont
+  accessory("acc-sunglasses", [
+    { x: 44, y: 34, w: 22, h: 26, d: 3, z: 24, shades: DARK },
+    { x: 84, y: 34, w: 22, h: 26, d: 3, z: 24, shades: DARK },
+    { x: 66, y: 40, w: 18, h: 4, d: 3, z: 24, shades: DARK },
   ]);
   accessory("acc-propeller", [
     { x: 53, y: 7, w: 44, h: 8, d: 32, shades: RED },

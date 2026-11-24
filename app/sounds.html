@@ -1,0 +1,33 @@
+<!doctype html>
+<!-- Banc d'écoute des sons du pet : `npm run dev` puis http://localhost:1420/sounds.html -->
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sons du pet</title>
+    <style>
+      body { font: 15px/1.4 -apple-system, system-ui, sans-serif; margin: 32px; background: #1f1b4a; color: #f3ecff; }
+      button { font: inherit; margin: 0 8px 8px 0; padding: 8px 16px; border: 0; border-radius: 8px; background: #5a50c0; color: inherit; cursor: pointer; }
+      button:hover { background: #6e63d8; }
+      label { display: block; margin: 16px 0; }
+    </style>
+  </head>
+  <body>
+    <h1>Sons du pet</h1>
+    <label>Volume <input id="vol" type="range" min="0" max="1" step="0.05" value="1" /></label>
+    <div id="list"></div>
+    <p><button id="all">Tout jouer à la suite</button></p>
+    <script type="module">
+      import { setSoundConfig, sound } from "/src/sound.ts";
+      const names = Object.keys(sound);
+      const list = document.getElementById("list");
+      for (const n of names) {
+        const b = document.createElement("button");
+        b.textContent = n;
+        b.onclick = () => sound[n]();
+        list.append(b);
+      }
+      document.getElementById("vol").oninput = (e) => setSoundConfig({ enabled: true, volume: +e.target.value });
+      document.getElementById("all").onclick = () => names.forEach((n, i) => setTimeout(sound[n], i * 1200));
+    </script>
+  </body>
+</html>

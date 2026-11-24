@@ -31,6 +31,10 @@ jobs:
         working-directory: app
         run: npx tsc --noEmit
 
+      - name: Tests front
+        working-directory: app
+        run: npm test
+
       # le build du front doit précéder cargo : Tauri embarque le dossier dist à la compilation
       - name: Build du front
         working-directory: app
@@ -39,6 +43,10 @@ jobs:
       - name: Tests Rust
         working-directory: app/src-tauri
         run: cargo test
+
+      - name: Clippy
+        working-directory: app/src-tauri
+        run: cargo clippy -- -D warnings
 
       - name: Build de l'app
         working-directory: app

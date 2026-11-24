@@ -1,9 +1,13 @@
 mod chat;
+mod gitdiff;
 mod local_usage;
 mod menu;
+mod mic;
 mod native;
+mod permission;
 mod server;
 mod setup;
+mod shortcut;
 
 use tauri::{Emitter, Listener, Manager};
 use tauri_nspanel::{tauri_panel, CollectionBehavior, PanelLevel, StyleMask, WebviewWindowExt};
@@ -57,11 +61,10 @@ async fn plan_usage() -> Option<serde_json::Value> {
     use std::time::{Duration, Instant};
     static LAST: Mutex<Option<(Instant, Option<serde_json::Value>)>> = Mutex::new(None);
     let mut last = LAST.lock().ok()?;
-    if let Some((at, value)) = &*last {
-        if at.elapsed() < Duration::from_secs(120) {
+    if let Some((at, value)) = &*last
+        && at.elapsed() < Duration::from_secs(120) {
             return value.clone();
         }
-    }
     let value = live_usage().map(|usage| serde_json::json!({ "usage": usage, "cachedAt": null })).or_else(cached_usage).or_else(|| last.as_ref().and_then(|(_, v)| v.clone()));
     *last = Some((Instant::now(), value.clone()));
     value
@@ -84,6 +87,10 @@ fn menu_bar_icon(app: &tauri::App) -> tauri::Result<()> {
             }
         })
         .build(app)?;
+    // session que le pet met en avant (la plus récente) : le menu en affiche le coût et le contexte
+    app.listen("focus-session", |e| {
+        *menu::FOCUS.lock().unwrap() = serde_json::from_str(e.payload()).ok();
+    });
     app.listen("sessions", |e| {
         menu::SESSIONS.store(e.payload().parse().unwrap_or(0), std::sync::atomic::Ordering::Relaxed);
     });
@@ -138,6 +145,12 @@ fn toggle_pet(app: tauri::AppHandle) {
     }
 }
 
+/// Coût et contexte d'une session, pour le survol du pet. Async : relire un gros transcript ne doit pas figer l'interface.
+#[tauri::command]
+async fn session_stats(id: String) -> Option<serde_json::Value> {
+    local_usage::session_stats(&id)
+}
+
 #[tauri::command]
 fn pet_hidden() -> bool {
     native::HIDDEN.load(std::sync::atomic::Ordering::Relaxed)
@@ -151,7 +164,7 @@ fn open_settings_cmd(app: tauri::AppHandle) {
 #[tauri::command]
 fn setup_status() -> serde_json::Value {
     let installed = std::env::current_exe().is_ok_and(|e| e.to_string_lossy().contains(".app/Contents/MacOS/"));
-    serde_json::json!({ "hooks": setup::hooks_installed(), "style": setup::style_enabled(), "login": setup::login_enabled(), "installed": installed })
+    serde_json::json!({ "hooks": setup::hooks_installed(), "login": setup::login_enabled(), "installed": installed })
 }
 
 #[tauri::command]
@@ -160,13 +173,18 @@ fn hooks_enable(on: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn style_enable(on: bool) -> Result<(), String> {
-    setup::set_style(on)
+fn login_enable(on: bool) -> Result<(), String> {
+    setup::set_login(on)
 }
 
 #[tauri::command]
-fn login_enable(on: bool) -> Result<(), String> {
-    setup::set_login(on)
+fn get_achievements() -> serde_json::Value {
+    setup::read_achievements()
+}
+
+#[tauri::command]
+fn save_achievements(counters: serde_json::Value) -> Result<(), String> {
+    setup::write_achievements(&counters)
 }
 
 #[tauri::command]
@@ -177,8 +195,15 @@ fn get_settings() -> serde_json::Value {
 /// Enregistre et prévient toutes les fenêtres (le pet applique les réglages en direct).
 #[tauri::command]
 fn save_settings(app: tauri::AppHandle, settings: serde_json::Value) -> Result<(), String> {
+    // un raccourci invalide est refusé avant d'écrire quoi que ce soit
+    let accel = settings["chatShortcut"].as_str().unwrap_or_default().to_string();
+    if !accel.is_empty() {
+        shortcut::parse(&accel)?;
+    }
     setup::write_settings(&settings)?;
-    app.emit("settings", setup::read_settings()).map_err(|e| e.to_string())
+    let registered = shortcut::apply(&app, &accel);
+    app.emit("settings", setup::read_settings()).map_err(|e| e.to_string())?;
+    registered
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -190,7 +215,8 @@ pub fn run() {
     setup::refresh_hooks_if_outdated();
     tauri::Builder::default()
         .plugin(tauri_nspanel::init())
-        .invoke_handler(tauri::generate_handler![native::screens, native::window_origin, native::set_window_origin, native::mouse, native::set_chat_open, native::set_hit_regions, native::set_sleeping, chat::ask, quit, open_settings_cmd, plan_usage, local_usage, toggle_pet, pet_hidden, setup_status, hooks_enable, style_enable, login_enable, get_settings, save_settings])
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .invoke_handler(tauri::generate_handler![native::screens, native::window_origin, native::set_window_origin, native::mouse, native::frontmost_app, native::file_size, native::focus_app, native::set_chat_open, native::set_hit_regions, native::set_sleeping, chat::ask, chat::copy_text, gitdiff::git_diff_size, permission::decide, quit, open_settings_cmd, plan_usage, local_usage, session_stats, toggle_pet, pet_hidden, setup_status, hooks_enable, login_enable, get_settings, save_settings, get_achievements, save_achievements])
         .setup(|app| {
             // Accessory : pas d'icône dans le Dock, requis pour s'afficher au-dessus du plein écran.
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
@@ -204,6 +230,10 @@ pub fn run() {
             allow_offscreen(&app.get_webview_window("main").unwrap());
             key_window_only_when_chatting(&app.get_webview_window("main").unwrap());
             menu_bar_icon(app)?;
+            if let Err(e) = shortcut::apply(app.handle(), setup::read_settings()["chatShortcut"].as_str().unwrap_or_default()) {
+                eprintln!("{e}");
+            }
+            mic::watch(app.handle().clone());
             server::listen(app.handle().clone());
             native::pointer_loop(app.get_webview_window("main").unwrap());
             Ok(())

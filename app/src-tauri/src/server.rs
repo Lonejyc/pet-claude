@@ -2,6 +2,7 @@
 //! Il n'accepte que les requêtes qui portent le secret du pet : sans lui, n'importe quelle page web ouverte dans un navigateur
 //! pourrait poster vers `localhost` et faire dire ce qu'elle veut au pet (un en-tête personnalisé force en plus une requête
 //! préalable CORS que ce serveur ne valide jamais).
+use crate::permission;
 use crate::setup::{token, EVENTS};
 use std::io::Read;
 use tauri::Emitter;
@@ -57,9 +58,18 @@ pub fn listen(app: tauri::AppHandle) {
             let mut body = String::new();
             let _ = req.as_reader().take(MAX_BODY as u64).read_to_string(&mut body);
             let v: serde_json::Value = serde_json::from_str(&body).unwrap_or_default();
+            // demande de permission : retenue dans son propre thread jusqu'au clic de l'utilisateur
+            if event == permission::EVENT {
+                let app = app.clone();
+                std::thread::spawn(move || permission::serve(app, req, v));
+                continue;
+            }
+            // fichier visé par l'outil (Edit, Write, NotebookEdit) : sert à compter les fichiers modifiés pendant un tour
+            let input = &v["tool_input"];
+            let file = if input["file_path"].is_string() { &input["file_path"] } else { &input["notebook_path"] };
             let _ = app.emit(
                 "hook",
-                serde_json::json!({ "event": event, "session": v["session_id"], "cwd": v["cwd"], "tool": v["tool_name"], "message": v["last_assistant_message"] }),
+                serde_json::json!({ "event": event, "session": v["session_id"], "cwd": v["cwd"], "tool": v["tool_name"], "file": file, "command": input["command"], "message": v["last_assistant_message"] }),
             );
             let _ = req.respond(tiny_http::Response::empty(200));
         }
@@ -81,6 +91,16 @@ mod tests {
     fn a_valid_hook_is_accepted() {
         assert_eq!(check(true, OK_HOST, Some(SECRET), Some(1200), "Stop"), Ok(()));
         assert_eq!(check(true, Some("127.0.0.1:4242"), Some(SECRET), None, "PreToolUse"), Ok(()));
+        for event in ["PostToolUse", "UserPromptSubmit", "Notification"] {
+            assert_eq!(check(true, OK_HOST, Some(SECRET), None, event), Ok(()), "{event}");
+        }
+    }
+
+    #[test]
+    fn permission_requests_need_the_secret_like_any_other_event() {
+        assert_eq!(check(true, OK_HOST, Some(SECRET), None, "PermissionRequest"), Ok(()));
+        assert_eq!(check(true, OK_HOST, None, None, "PermissionRequest"), Err(403));
+        assert_eq!(check(false, OK_HOST, Some(SECRET), None, "PermissionRequest"), Err(405));
     }
 
     #[test]

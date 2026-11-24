@@ -2,7 +2,7 @@
 //! Les conversions de Tauri/tao se mélangent entre écrans d'échelles ou de hauteurs différentes (le pet apparaissait en double) :
 //! ici tout est en points, y vers le bas, origine en haut à gauche de l'écran principal.
 use objc2::MainThreadMarker;
-use objc2_app_kit::{NSApplication, NSApplicationActivationPolicy, NSEvent, NSScreen, NSWindow};
+use objc2_app_kit::{NSApplication, NSApplicationActivationPolicy, NSEvent, NSScreen, NSWindow, NSWorkspace};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri::Emitter;
@@ -48,6 +48,33 @@ pub fn screens() -> Vec<Screen> {
     NSScreen::screens(mtm).iter().map(|s| Screen { frame: flip(s.frame(), ph), work: flip(s.visibleFrame(), ph) }).collect()
 }
 
+/// Bundle id de l'app au premier plan (jamais celle du pet). Sert à retrouver le terminal d'une session : c'est l'app active quand on envoie un prompt.
+#[tauri::command]
+pub fn frontmost_app() -> Option<String> {
+    let app = NSWorkspace::sharedWorkspace().frontmostApplication()?;
+    if app.processIdentifier() == std::process::id() as i32 {
+        return None;
+    }
+    Some(app.bundleIdentifier()?.to_string())
+}
+
+/// Taille d'un fichier ordinaire (None pour un dossier ou un chemin introuvable) : le front refuse les pièces jointes trop lourdes.
+#[tauri::command]
+pub fn file_size(path: String) -> Option<u64> {
+    std::fs::metadata(path).ok().filter(|m| m.is_file()).map(|m| m.len())
+}
+
+/// Un bundle id ne contient que lettres, chiffres, points et tirets : on refuse tout le reste avant de le passer à `open`.
+fn valid_bundle_id(id: &str) -> bool {
+    !id.is_empty() && !id.starts_with('-') && id.len() < 200 && id.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-')
+}
+
+/// Ramène une app au premier plan (`open -b` : fiable depuis une app « accessory », contrairement à `activate`).
+#[tauri::command]
+pub fn focus_app(bundle_id: String) -> bool {
+    valid_bundle_id(&bundle_id) && std::process::Command::new("/usr/bin/open").args(["-b", &bundle_id]).spawn().is_ok()
+}
+
 #[tauri::command]
 pub fn window_origin(window: WebviewWindow) -> (f64, f64) {
     let f = ns_window(&window).frame();
@@ -82,6 +109,9 @@ pub fn set_chat_open(window: WebviewWindow, open: bool) {
         // rend la main à l'application précédente (le terminal)
         app.hide(None);
         w.orderFrontRegardless();
+        if SUMMONED_FROM_HIDDEN.swap(false, Ordering::Relaxed) {
+            toggle_pet(&window);
+        }
     }
 }
 
@@ -116,6 +146,32 @@ pub fn set_sleeping(sleeping: bool) {
 }
 
 /// Masque ou ré-affiche le pet ; retourne true s'il est maintenant visible.
+/// Le pet était masqué quand le raccourci l'a fait apparaître : on le recache à la fermeture du chat.
+static SUMMONED_FROM_HIDDEN: AtomicBool = AtomicBool::new(false);
+
+/// Centre `w` x `h` sur l'écran qui contient le pointeur (zone utile, sans barre de menus ni Dock), sinon sur le premier écran.
+fn center_on(works: &[Rect], mouse: (f64, f64), w: f64, h: f64) -> Option<(f64, f64)> {
+    let r = works.iter().find(|r| mouse.0 >= r.x && mouse.0 < r.x + r.w && mouse.1 >= r.y && mouse.1 < r.y + r.h).or(works.first())?;
+    Some((r.x + (r.w - w) / 2.0, r.y + (r.h - h) / 2.0))
+}
+
+/// Raccourci global : fait apparaître le pet (même masqué) au centre de l'écran actif. Le front ouvre ensuite le chat.
+pub fn summon(window: &WebviewWindow) {
+    if HIDDEN.load(Ordering::Relaxed) {
+        toggle_pet(window);
+        SUMMONED_FROM_HIDDEN.store(true, Ordering::Relaxed);
+    }
+    let mtm = main_thread();
+    let ph = primary_height(mtm);
+    let works: Vec<Rect> = NSScreen::screens(mtm).iter().map(|s| flip(s.visibleFrame(), ph)).collect();
+    let m = NSEvent::mouseLocation();
+    let w = ns_window(window);
+    let size = w.frame().size;
+    if let Some((x, y)) = center_on(&works, (m.x, ph - m.y), size.width, size.height) {
+        w.setFrameTopLeftPoint(NSPoint::new(x, ph - y));
+    }
+}
+
 pub fn toggle_pet(window: &WebviewWindow) -> bool {
     let show = HIDDEN.load(Ordering::Relaxed);
     HIDDEN.store(!show, Ordering::Relaxed);
@@ -131,14 +187,17 @@ pub fn toggle_pet(window: &WebviewWindow) -> bool {
 /// Une fenêtre transparente intercepte les clics sur toute sa surface : on la rend "traversante" tant que la souris n'est
 /// pas sur une zone cliquable. Pendant un clic ou un glisser (bouton enfoncé), on ne change rien pour ne pas lâcher le pet.
 fn update_click_through(window: &WebviewWindow) {
-    if NSEvent::pressedMouseButtons() != 0 {
-        return;
-    }
+    let pressed = NSEvent::pressedMouseButtons() != 0;
     let w = ns_window(window);
     let f = w.frame();
     let m = NSEvent::mouseLocation();
     let (x, y) = (m.x - f.origin.x, f.size.height - (m.y - f.origin.y));
     let over = HIT_REGIONS.lock().unwrap().iter().any(|[rx, ry, rw, rh]| x >= *rx && x <= rx + rw && y >= *ry && y <= ry + rh);
+    // Bouton enfoncé : on ne rend jamais la fenêtre traversante (sinon le pet qu'on glisse serait lâché), mais on la rend
+    // réceptive si le pointeur arrive sur le pet, pour qu'un fichier glissé depuis le Finder puisse y être déposé.
+    if pressed && !over {
+        return;
+    }
     if w.ignoresMouseEvents() == over {
         w.setIgnoresMouseEvents(!over);
     }
@@ -172,4 +231,49 @@ pub fn pointer_loop(window: WebviewWindow) {
             }
         });
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{center_on, file_size, valid_bundle_id, Rect};
+
+    fn rect(x: f64, y: f64, w: f64, h: f64) -> Rect {
+        Rect { x, y, w, h }
+    }
+
+    #[test]
+    fn the_window_is_centered_on_the_screen_holding_the_pointer() {
+        let screens = [rect(0.0, 25.0, 1440.0, 800.0), rect(1440.0, 0.0, 1920.0, 1080.0)];
+        assert_eq!(center_on(&screens, (100.0, 100.0), 280.0, 296.0), Some((580.0, 277.0)));
+        assert_eq!(center_on(&screens, (2000.0, 500.0), 280.0, 296.0), Some((2260.0, 392.0)));
+    }
+
+    #[test]
+    fn a_pointer_outside_every_screen_falls_back_to_the_first_one() {
+        let screens = [rect(0.0, 0.0, 1000.0, 600.0)];
+        assert_eq!(center_on(&screens, (-50.0, 9999.0), 200.0, 100.0), Some((400.0, 250.0)));
+        assert_eq!(center_on(&[], (0.0, 0.0), 200.0, 100.0), None);
+    }
+
+    #[test]
+    fn file_size_only_answers_for_regular_files() {
+        let dir = std::env::temp_dir().join(format!("pet-size-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let f = dir.join("a.log");
+        std::fs::write(&f, "abcd").unwrap();
+        assert_eq!(file_size(f.to_string_lossy().into()), Some(4));
+        assert_eq!(file_size(dir.to_string_lossy().into()), None, "un dossier n'est pas une pièce jointe");
+        assert_eq!(file_size("/nope/absent".into()), None);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn bundle_ids_are_validated_before_reaching_open() {
+        for ok in ["com.apple.Terminal", "com.googlecode.iterm2", "dev.warp.Warp-Stable"] {
+            assert!(valid_bundle_id(ok), "{ok}");
+        }
+        for bad in ["", "-a", "--args", "com.x y", "a;rm -rf", "com/apple", "é.app"] {
+            assert!(!valid_bundle_id(bad), "{bad}");
+        }
+    }
 }

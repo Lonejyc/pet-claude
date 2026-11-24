@@ -1,4 +1,4 @@
-//! Configuration du pet sur la machine : hooks Claude Code, personnalité globale, lancement au démarrage, réglages, secret.
+//! Configuration du pet sur la machine : hooks Claude Code, lancement au démarrage, réglages, secret.
 //! Utilisé par la fenêtre de réglages ET par la ligne de commande (`app --install-hooks`, appelée par l'installateur .pkg).
 //! Toutes les fonctions `*_in` prennent le dossier personnel en paramètre : c'est ce qui permet de les tester sur un faux dossier.
 use serde_json::{json, Map, Value};
@@ -6,8 +6,7 @@ use std::path::{Path, PathBuf};
 
 pub const IDENTIFIER: &str = "io.github.lonejyc.pet-claude";
 const LEGACY_IDENTIFIER: &str = "fr.perso.petclaude"; // identifiant des betas 1 et 2, migré au démarrage
-pub const EVENTS: [&str; 5] = ["SessionStart", "SessionEnd", "PreToolUse", "PostToolUseFailure", "Stop"];
-const STYLE_MD: &str = include_str!("../../../.claude/output-styles/pet.md");
+pub const EVENTS: [&str; 9] = ["SessionStart", "SessionEnd", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "Notification", "PermissionRequest", "Stop"];
 
 fn real_home() -> PathBuf {
     PathBuf::from(std::env::var_os("HOME").expect("HOME non défini"))
@@ -59,12 +58,14 @@ fn token_in(home: &Path) -> String {
 // ---- hooks Claude Code
 
 fn hook_command(event: &str, token: &str) -> String {
-    format!("curl -s -m 1 -H \"X-Pet-Token: {token}\" --data-binary @- localhost:4242/{event} || true")
+    // le hook des permissions attend la décision de l'utilisateur : délai plus long (cf. permission.rs, WAIT = 20 s)
+    let secs = if event == "PermissionRequest" { 25 } else { 1 };
+    format!("curl -s -m {secs} -H \"X-Pet-Token: {token}\" --data-binary @- localhost:4242/{event} || true")
 }
 
-/// Un hook est à nous s'il envoie vers le port du pet (y compris les anciens, sans secret).
+/// Un hook est à nous s'il envoie vers le port du pet (y compris les anciens, sans secret, et celui des permissions, dont le délai est plus long).
 fn is_ours(command: &str) -> bool {
-    command.starts_with("curl -s -m 1 ") && command.contains("localhost:4242/")
+    command.starts_with("curl -s -m ") && command.contains("localhost:4242/")
 }
 
 fn read_claude_settings(home: &Path) -> Result<Value, String> {
@@ -116,7 +117,11 @@ fn set_hooks_in(home: &Path, token: &str, on: bool) -> Result<(), String> {
         // on retire d'abord les nôtres (pas de doublon, c'est aussi la désinstallation et la mise à jour du secret), puis on rajoute
         groups.retain(|g| !g["hooks"].as_array().is_some_and(|hs| hs.iter().any(|h| h["command"].as_str().is_some_and(is_ours))));
         if on {
-            groups.push(json!({ "hooks": [{ "type": "command", "command": hook_command(ev, token) }] }));
+            let mut hook = json!({ "type": "command", "command": hook_command(ev, token) });
+            if ev == "PermissionRequest" {
+                hook["timeout"] = json!(30); // sans cela, Claude attendrait jusqu'à 600 s si le pet ne répond jamais
+            }
+            groups.push(json!({ "hooks": [hook] }));
         }
     }
     hooks.retain(|_, v| v.as_array().is_none_or(|a| !a.is_empty()));
@@ -141,38 +146,10 @@ pub fn set_hooks(on: bool) -> Result<(), String> {
 pub fn refresh_hooks_if_outdated() {
     let home = real_home();
     let token = token_in(&home);
-    if hooks_present_in(&home) && !hooks_installed_in(&home, &token) {
-        if let Err(e) = set_hooks_in(&home, &token, true) {
+    if hooks_present_in(&home) && !hooks_installed_in(&home, &token)
+        && let Err(e) = set_hooks_in(&home, &token, true) {
             eprintln!("mise à jour des hooks : {e}");
         }
-    }
-}
-
-// ---- personnalité globale
-
-fn style_enabled_in(home: &Path) -> bool {
-    read_claude_settings(home).is_ok_and(|s| s["outputStyle"] == "Pet")
-}
-
-fn set_style_in(home: &Path, on: bool) -> Result<(), String> {
-    let mut settings = read_claude_settings(home)?;
-    let root = settings.as_object_mut().ok_or("~/.claude/settings.json n'est pas un objet JSON")?;
-    if on {
-        let dir = home.join(".claude/output-styles");
-        std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-        write_atomic(&dir.join("pet.md"), STYLE_MD)?;
-        root.insert("outputStyle".into(), json!("Pet"));
-    } else if root.get("outputStyle") == Some(&json!("Pet")) {
-        root.remove("outputStyle");
-    }
-    write_claude_settings(home, &settings)
-}
-
-pub fn style_enabled() -> bool {
-    style_enabled_in(&real_home())
-}
-pub fn set_style(on: bool) -> Result<(), String> {
-    set_style_in(&real_home(), on)
 }
 
 // ---- lancement au démarrage
@@ -220,7 +197,35 @@ fn settings_path(home: &Path) -> PathBuf {
 }
 
 fn default_settings() -> Value {
-    json!({ "cooldownSec": 12, "sleepAfterSec": 60, "confetti": true, "sound": true, "volume": 1.0, "emotes": false, "emoteEverySec": 30, "skinColor": "orange", "skinAccessory": "none" })
+    json!({ "cooldownSec": 12, "sleepAfterSec": 60, "confetti": true, "sound": true, "soundMode": "all", "chatShortcut": "Control+Alt+Space", "stealth": true, "petScale": 1.0, "volume": 1.0, "emotes": false, "emoteEverySec": 30, "skinColor": "orange", "skinAccessory": "none" })
+}
+
+// ---- succès : compteurs locaux qui débloquent des accessoires (jamais envoyés nulle part)
+
+const COUNTERS: [&str; 3] = ["files", "fixes", "cleanSessions"];
+
+fn achievements_path(home: &Path) -> PathBuf {
+    support_dir(home, IDENTIFIER).join("achievements.json")
+}
+
+/// Compteurs lus sur disque : seules les clés connues, des entiers positifs plafonnés (un fichier édité à la main ne casse rien).
+fn read_achievements_in(home: &Path) -> Value {
+    let stored: Value = std::fs::read_to_string(achievements_path(home)).ok().and_then(|t| serde_json::from_str(&t).ok()).unwrap_or_default();
+    Value::Object(COUNTERS.iter().map(|k| (k.to_string(), json!(stored[k].as_u64().unwrap_or(0).min(1_000_000_000)))).collect())
+}
+
+fn write_achievements_in(home: &Path, counters: &Value) -> Result<(), String> {
+    // même nettoyage qu'à la lecture
+    let clean: Value = Value::Object(COUNTERS.iter().map(|k| (k.to_string(), json!(counters[k].as_u64().unwrap_or(0).min(1_000_000_000)))).collect());
+    write_atomic(&achievements_path(home), &serde_json::to_string_pretty(&clean).map_err(|e| e.to_string())?)
+}
+
+pub fn read_achievements() -> Value {
+    read_achievements_in(&real_home())
+}
+
+pub fn write_achievements(counters: &Value) -> Result<(), String> {
+    write_achievements_in(&real_home(), counters)
 }
 
 pub fn read_settings() -> Value {
@@ -247,11 +252,10 @@ pub fn migrate_legacy() {
 
 fn migrate_legacy_in(home: &Path, exe: Option<&str>) {
     let old_settings = settings_path_for(home, LEGACY_IDENTIFIER);
-    if old_settings.exists() && !settings_path(home).exists() {
-        if let Ok(text) = std::fs::read_to_string(&old_settings) {
+    if old_settings.exists() && !settings_path(home).exists()
+        && let Ok(text) = std::fs::read_to_string(&old_settings) {
             let _ = write_atomic(&settings_path(home), &text);
         }
-    }
     // l'ancien agent de lancement est remplacé par le nouveau (le lancement au démarrage reste activé)
     if login_plist(home, LEGACY_IDENTIFIER).exists() {
         let _ = set_login_in(home, true, exe.unwrap_or(""));
@@ -270,12 +274,10 @@ pub fn run_cli() -> bool {
     let result = match flag.as_str() {
         "--install-hooks" => set_hooks(true),
         "--remove-hooks" => set_hooks(false),
-        "--enable-style" => set_style(true),
-        "--disable-style" => set_style(false),
         "--enable-login" => set_login(true),
         "--disable-login" => set_login(false),
         "--status" => {
-            println!("hooks={} style={} login={}", hooks_installed(), style_enabled(), login_enabled());
+            println!("hooks={} login={}", hooks_installed(), login_enabled());
             Ok(())
         }
         _ => return false,
@@ -316,7 +318,7 @@ mod tests {
     }
 
     #[test]
-    fn install_on_missing_file_creates_the_five_hooks() {
+    fn install_on_missing_file_creates_all_the_hooks() {
         let home = temp_home("missing");
         std::fs::remove_dir_all(home.join(".claude")).unwrap();
         set_hooks_in(&home, TOKEN, true).unwrap();
@@ -325,6 +327,58 @@ mod tests {
             assert_eq!(count_ours(&s, ev), 1, "{ev}");
         }
         assert!(hooks_installed_in(&home, TOKEN));
+    }
+
+    #[test]
+    fn hooks_installed_by_an_older_version_are_detected_as_outdated() {
+        let home = temp_home("older");
+        let old: Vec<_> = ["SessionStart", "SessionEnd", "PreToolUse", "PostToolUseFailure", "Stop"].into();
+        let hooks: Map<String, Value> = old
+            .iter()
+            .map(|ev| (ev.to_string(), json!([{ "hooks": [{ "type": "command", "command": hook_command(ev, TOKEN) }] }])))
+            .collect();
+        write_claude(&home, &json!({ "hooks": hooks }));
+        // refresh_hooks_if_outdated agit exactement sur ce couple de conditions
+        assert!(hooks_present_in(&home) && !hooks_installed_in(&home, TOKEN));
+        set_hooks_in(&home, TOKEN, true).unwrap();
+        assert!(hooks_installed_in(&home, TOKEN));
+    }
+
+    #[test]
+    fn the_permission_hook_with_a_longer_timeout_is_recognized_as_ours_and_foreign_curls_are_not() {
+        assert!(is_ours("curl -s -m 25 -H \"X-Pet-Token: abc\" --data-binary @- localhost:4242/PermissionRequest || true"));
+        assert!(!is_ours("curl -s -m 5 https://example.com/hook"));
+        assert!(!is_ours("curl -s -m 5 localhost:8080/PermissionRequest"));
+    }
+
+    #[test]
+    fn only_the_permission_hook_waits_for_the_user() {
+        let home = temp_home("perm");
+        write_claude(&home, &json!({ "hooks": { "PermissionRequest": [{ "hooks": [{ "type": "command", "command": "/usr/local/bin/mon-hook" }] }] } }));
+        set_hooks_in(&home, TOKEN, true).unwrap();
+        let s = read_claude(&home);
+        let groups = s["hooks"]["PermissionRequest"].as_array().unwrap();
+        assert_eq!(groups.len(), 2, "le hook de l'utilisateur est conservé à côté du nôtre");
+        let ours = groups.iter().flat_map(|g| g["hooks"].as_array().unwrap()).find(|h| is_ours(h["command"].as_str().unwrap())).unwrap();
+        assert_eq!(ours["timeout"], 30);
+        assert!(ours["command"].as_str().unwrap().starts_with("curl -s -m 25 "));
+        let stop = &s["hooks"]["Stop"][0]["hooks"][0];
+        assert!(stop["command"].as_str().unwrap().starts_with("curl -s -m 1 ") && stop.get("timeout").is_none());
+        set_hooks_in(&home, TOKEN, false).unwrap();
+        let after = read_claude(&home);
+        assert_eq!(after["hooks"]["PermissionRequest"].as_array().unwrap().len(), 1, "la désinstallation ne retire que le nôtre");
+    }
+
+    #[test]
+    fn achievements_start_at_zero_roundtrip_and_ignore_junk() {
+        let home = temp_home("ach");
+        assert_eq!(read_achievements_in(&home), json!({ "files": 0, "fixes": 0, "cleanSessions": 0 }));
+        write_achievements_in(&home, &json!({ "files": 120, "fixes": 3, "cleanSessions": 1, "evil": 9, "x": "y" })).unwrap();
+        assert_eq!(read_achievements_in(&home), json!({ "files": 120, "fixes": 3, "cleanSessions": 1 }));
+        std::fs::write(achievements_path(&home), r#"{"files":-5,"fixes":"beaucoup","cleanSessions":99999999999999}"#).unwrap();
+        assert_eq!(read_achievements_in(&home), json!({ "files": 0, "fixes": 0, "cleanSessions": 1_000_000_000 }));
+        std::fs::write(achievements_path(&home), "pas du json").unwrap();
+        assert_eq!(read_achievements_in(&home)["files"], 0);
     }
 
     #[test]
@@ -375,7 +429,6 @@ mod tests {
         let home = temp_home("invalid");
         std::fs::write(claude_settings_path(&home), "{ pas du json").unwrap();
         assert!(set_hooks_in(&home, TOKEN, true).is_err());
-        assert!(set_style_in(&home, true).is_err());
         assert_eq!(std::fs::read_to_string(claude_settings_path(&home)).unwrap(), "{ pas du json");
         assert!(!hooks_installed_in(&home, TOKEN));
     }
@@ -423,7 +476,6 @@ mod tests {
     fn writes_leave_no_temporary_file() {
         let home = temp_home("atomic");
         set_hooks_in(&home, TOKEN, true).unwrap();
-        set_style_in(&home, true).unwrap();
         let leftovers: Vec<_> = std::fs::read_dir(home.join(".claude")).unwrap().flatten().filter(|e| e.file_name().to_string_lossy().contains("tmp-pet-claude")).collect();
         assert!(leftovers.is_empty());
     }
@@ -435,21 +487,6 @@ mod tests {
         std::fs::set_permissions(claude_settings_path(&home), std::fs::Permissions::from_mode(0o600)).unwrap();
         set_hooks_in(&home, TOKEN, true).unwrap();
         assert_eq!(std::fs::metadata(claude_settings_path(&home)).unwrap().permissions().mode() & 0o777, 0o600);
-    }
-
-    #[test]
-    fn style_on_and_off_only_touches_its_own_value() {
-        let home = temp_home("style");
-        write_claude(&home, &json!({ "model": "x" }));
-        set_style_in(&home, true).unwrap();
-        assert!(style_enabled_in(&home));
-        assert!(home.join(".claude/output-styles/pet.md").exists());
-        set_style_in(&home, false).unwrap();
-        assert!(!style_enabled_in(&home));
-
-        write_claude(&home, &json!({ "outputStyle": "Explanatory" }));
-        set_style_in(&home, false).unwrap();
-        assert_eq!(read_claude(&home)["outputStyle"], "Explanatory", "le style de l'utilisateur ne doit pas être retiré");
     }
 
     #[test]

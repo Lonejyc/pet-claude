@@ -20,6 +20,12 @@ output { color: var(--muted); font-variant-numeric: tabular-nums; }
 select { appearance: none; height: 28px; padding: 0 28px 0 12px; border: 0.5px solid var(--line); border-radius: 8px; background: color-mix(in srgb, CanvasText 8%, transparent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='14' fill='none' stroke='gray' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.5 5 2.5l3 3M2 8.5l3 3 3-3'/%3E%3C/svg%3E") right 10px center / 10px 14px no-repeat; color: var(--text); font: inherit; }
 /* bouton poussoir macOS : 22 pt de haut, texte 13 pt, coins de 6 pt, fond gris translucide */
 button { height: 22px; padding: 0 8px; border: 0; border-radius: 6px; background: color-mix(in srgb, CanvasText 12%, transparent); color: var(--text); font: inherit; }
+.shortcut { display: flex; gap: 4px; }
+.shortcut button { white-space: nowrap; }
+/* la liste des accessoires contient des libellés longs (accessoires à débloquer) : le champ garde une largeur fixe */
+#skinAccessory { width: 260px; }
+.shortcut button[hidden] { display: none; }
+button.recording { background: color-mix(in srgb, #e8793c 30%, transparent); }
 button:active { background: color-mix(in srgb, CanvasText 22%, transparent); }
 input[type="range"] { width: 150px; }
 input:disabled { opacity: 0.4; }
