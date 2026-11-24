@@ -12,6 +12,7 @@ import { fail, isHeavy, isNervous, streakKey, succeed } from "./nervous";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { classifyDrop, defaultQuestion, type Attachment } from "./attachment";
 import * as perm from "./permission";
+import { christmasOn } from "./christmas";
 import { setSoundConfig, setToolPitch, sound } from "./sound";
 
 type Hook = { event: string; session?: string | null; cwd?: string | null; tool?: string; file?: string; command?: string | null; message?: string };
@@ -20,6 +21,11 @@ const pet = document.querySelector<HTMLElement>("#pet")!;
 const bubble = document.querySelector<HTMLElement>("#bubble")!;
 buildPet(document.querySelector<HTMLElement>("#rig")!);
 setSkin(pet, "orange", "none"); // avant l'arrivée des réglages
+
+// Noël : grelots à la place de la fanfare, boîte à musique à l'endormissement.
+let xmasSetting: boolean | undefined;
+const xmas = () => christmasOn(xmasSetting, new Date());
+const cheer = () => (xmas() ? sound.sleighBells() : sound.tada());
 // Un "tok" à chaque coup de marteau (impacts à 5 %, 21 % et 38 % du cycle de 2 s défini dans styles.css).
 const hammer = document.querySelector<HTMLElement>(".hammer")!;
 const tokOnImpacts = () => [100, 420, 760].forEach((ms) => setTimeout(sound.tok, ms));
@@ -61,7 +67,7 @@ function confetti() {
     c.addEventListener("animationend", () => c.remove());
     pet.append(c);
   }
-  sound.tada();
+  cheer();
 }
 
 // Bruit de frappe : un clic toutes les 140 ms, un par coup de bras (les bras alternent, cf. @keyframes tap).
@@ -73,6 +79,7 @@ function setState(state: string, thenAfterMs?: number, then = "idle") {
   if (sleeping !== wasSleeping) {
     wasSleeping = sleeping;
     invoke("set_sleeping", { sleeping });
+    if (sleeping && xmas()) sound.musicBox();
   }
   if (state !== "sleeping" && state !== "emote") lastActivity = Date.now();
   delete pet.dataset.tool;
@@ -242,7 +249,7 @@ function celebrateNow(big: boolean) {
   wake();
   hop();
   if (big && CONFETTI) confetti();
-  else sound.tada();
+  else cheer();
 }
 
 // Coût de la session et remplissage du contexte : au survol du pet, dans le menu de la barre de menus, et une alerte à 80 %.
@@ -389,7 +396,7 @@ listen<Hook>("hook", ({ payload }) => {
     invoke<string | null>("frontmost_app").then((front) => {
       if (!session.app || front === session.app) return;
       hop();
-      if (!celebrate) sound.tada();
+      if (!celebrate) cheer();
     });
     bump("files", session.files.size);
     session.failed = false;
@@ -931,7 +938,7 @@ chips.addEventListener("mousedown", (e) => e.preventDefault());
 chatInput.addEventListener("blur", () => setTimeout(closeChat, 150));
 
 // Réglages (fenêtre de réglages) : lus au démarrage, puis appliqués en direct à chaque changement.
-type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; soundMode: "all" | "alerts"; chatShortcut: string; stealth: boolean; petScale: number; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
+type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; soundMode: "all" | "alerts"; chatShortcut: string; stealth: boolean; petScale: number; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string; christmas?: boolean };
 // Mode furtif : pendant un appel (micro utilisé, cf. mic.rs) le pet rétrécit, se tait et ne fait plus de bulles ni de confettis.
 // Les demandes de permission restent visibles : elles bloquent Claude.
 let STEALTH = true;
@@ -961,6 +968,7 @@ function applySettings(s: Settings) {
   soundSettings = { enabled: s.sound, volume: s.volume, mode: s.soundMode };
   renderStealth();
   setSkin(pet, s.skinColor, s.skinAccessory);
+  xmasSetting = s.christmas;
 }
 invoke<Settings>("get_settings").then(applySettings);
 listen<Settings>("settings", ({ payload }) => applySettings(payload));

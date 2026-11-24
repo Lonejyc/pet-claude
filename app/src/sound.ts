@@ -175,6 +175,20 @@ const raw = {
   },
   // fanfare de marimba/cloche : do-mi-sol-do, la dernière note résonne
   tada: () => [523, 659, 784, 1047].forEach((f, i, a) => bell(f, i * 90, i === a.length - 1 ? 900 : 450)),
+  // fin de tâche en saison de Noël : grelots (bruit aigu + cloches hautes) qui sonnent le motif de Jingle Bells (mi-mi-mi), la dernière note résonne
+  sleighBells: () => {
+    [[659, 0, 180], [659, 190, 180], [659, 380, 520]].forEach(([f, delay, ms]) => {
+      noiseHit({ ms: 160, vol: 0.05, filter: "highpass", freq: 7000, q: 0.6, delay, wet: 0.25 });
+      bell(f * 2, delay, ms);
+    });
+  },
+  // endormissement en saison de Noël : les premières notes de Douce nuit (sol-la-sol-mi), timbre de boîte à musique
+  musicBox: () => {
+    [[392, 0, 500], [440, 420, 250], [392, 640, 500], [330, 1060, 900]].forEach(([f, delay, ms]) => {
+      voice({ from: f * 2, ms, type: "triangle", vol: 0.04, delay, wet: 0.5, attack: 0.003, cents: 3 });
+      voice({ from: f * 4, ms: ms * 0.3, type: "sine", vol: 0.01, delay, attack: 0.001, cents: 3 });
+    });
+  },
   // coup de marteau : claquement de bois (bruit) + corps qui résonne
   tok: () => {
     noiseHit({ ms: 25, vol: 0.15, filter: "bandpass", freq: 1800 * pitch, q: 2 });

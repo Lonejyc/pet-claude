@@ -31,6 +31,8 @@ export const ACCESSORIES: Record<string, string> = {
   propeller: "Casquette à hélice",
   hardhat: "Casque de chantier",
   sunglasses: "Lunettes de soleil",
+  santa: "Bonnet de Noël",
+  reindeer: "Bois de renne",
 };
 
 export function setSkin(pet: HTMLElement, color: string, accessory: string) {

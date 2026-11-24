@@ -5,6 +5,7 @@ type Cube = { x: number; y: number; w: number; h: number; d: number; z?: number;
 const GOLD = { front: "#e0b93a", top: "#f3d56a", right: "#b08d22", left: "#c29d2a", back: "#a68320", bottom: "#7d6217" };
 const BONE = { front: "#ece2cb", top: "#f8f1e0", right: "#c2b89f", left: "#d3c9b0", back: "#b0a68d", bottom: "#948b74" };
 const RED = { front: "#d6453a", top: "#e8685d", right: "#a8342b", left: "#bc3b31", back: "#942d25", bottom: "#78241e" };
+const WHITE = { front: "#f6f4f0", top: "#ffffff", right: "#cfcbc4", left: "#dedad3", back: "#bdb9b2", bottom: "#a29e97" };
 const DARK = { front: "#2b2b33", top: "#44444f", right: "#1d1d22", left: "#24242a", back: "#18181c", bottom: "#101013" };
 const GREY = { front: "#6b6f7a", top: "#c9ccd6", right: "#4b4e57", left: "#5a5d67", back: "#3f424a", bottom: "#2e3036" };
 const KEY = { front: "#d8dbe3", top: "#f2f3f7", right: "#a9adb8", left: "#b7bbc6", back: "#9a9ea9", bottom: "#7d818c" };
@@ -134,6 +135,19 @@ export function buildPet(rig: HTMLElement) {
     { x: 44, y: 34, w: 22, h: 26, d: 3, z: 24, shades: DARK },
     { x: 84, y: 34, w: 22, h: 26, d: 3, z: 24, shades: DARK },
     { x: 66, y: 40, w: 18, h: 4, d: 3, z: 24, shades: DARK },
+  ]);
+  // bonnet de Noël : bande blanche, deux étages rouges qui penchent, pompon
+  accessory("acc-santa", [
+    { x: 52, y: 9, w: 46, h: 7, d: 32, shades: WHITE },
+    { x: 57, y: -1, w: 36, h: 11, d: 26, shades: RED },
+    { x: 64, y: -9, w: 24, h: 9, d: 18, shades: RED },
+    { x: 80, y: -16, w: 8, h: 8, d: 8, shades: WHITE },
+  ]);
+  // bois de renne et nez rouge (le nez est posé sur la face avant, entre les yeux)
+  accessory("acc-reindeer", [
+    { x: 44, y: 2, w: 5, h: 13, d: 5, shades: WOOD }, { x: 37, y: 6, w: 8, h: 4, d: 4, shades: WOOD }, { x: 37, y: -2, w: 4, h: 9, d: 4, shades: WOOD },
+    { x: 101, y: 2, w: 5, h: 13, d: 5, shades: WOOD }, { x: 105, y: 6, w: 8, h: 4, d: 4, shades: WOOD }, { x: 109, y: -2, w: 4, h: 9, d: 4, shades: WOOD },
+    { x: 70, y: 52, w: 10, h: 9, d: 6, z: 25.5, shades: RED },
   ]);
   accessory("acc-propeller", [
     { x: 53, y: 7, w: 44, h: 8, d: 32, shades: RED },

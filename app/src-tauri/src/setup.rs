@@ -232,7 +232,8 @@ pub fn read_settings() -> Value {
     let mut merged = default_settings();
     if let Some(stored) = std::fs::read_to_string(settings_path(&real_home())).ok().and_then(|t| serde_json::from_str::<Value>(&t).ok()) {
         for (k, v) in stored.as_object().into_iter().flatten() {
-            if merged.get(k).is_some() {
+            // `christmas` n'a pas de valeur par défaut : absent = « selon la saison » (cf. christmas.ts)
+            if merged.get(k).is_some() || k == "christmas" {
                 merged[k] = v.clone();
             }
         }

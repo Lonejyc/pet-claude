@@ -55,9 +55,10 @@ describe("soundAllowed", () => {
   it("mode all : tout passe", () => expect(["blip", "key", "tada"].every((n) => soundAllowed("all", n))).toBe(true));
   it("mode alerts : seuls l'erreur, la fin de tâche et la permission passent", () => {
     expect(soundAllowed("alerts", "tada")).toBe(true);
+    expect(soundAllowed("alerts", "sleighBells")).toBe(true);
     expect(soundAllowed("alerts", "worried")).toBe(true);
     expect(soundAllowed("alerts", "yelp")).toBe(true);
-    for (const n of ["blip", "key", "tok", "crash", "thump", "squish", "boing"]) expect(soundAllowed("alerts", n)).toBe(false);
+    for (const n of ["blip", "key", "tok", "crash", "thump", "squish", "boing", "musicBox"]) expect(soundAllowed("alerts", n)).toBe(false);
   });
 });
 

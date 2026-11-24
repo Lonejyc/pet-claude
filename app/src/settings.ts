@@ -1,9 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { accelFromEvent, DEFAULT_SHORTCUT, formatAccel } from "./accelerator";
 import { EMPTY, isUnlocked, progress, type Counters } from "./achievements";
+import { christmasOn } from "./christmas";
 import { ACCESSORIES, COLORS } from "./skins";
 
-type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; soundMode: "all" | "alerts"; chatShortcut: string; stealth: boolean; petScale: number; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
+type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; soundMode: "all" | "alerts"; chatShortcut: string; stealth: boolean; petScale: number; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string; christmas?: boolean };
 type Status = { hooks: boolean; login: boolean; installed: boolean };
 
 const $ = <T extends HTMLElement>(id: string) => document.querySelector<T>(`#${id}`)!;
@@ -28,6 +29,13 @@ const fields = {
   skinAccessory: $<HTMLSelectElement>("skinAccessory"),
   emoteEverySec: $<HTMLInputElement>("emoteEverySec"),
 };
+// Noël : la clé n'est écrite qu'au premier clic ; tant qu'elle est absente, la case suit la saison.
+const christmas = $<HTMLInputElement>("christmas");
+let christmasSet: boolean | undefined;
+christmas.addEventListener("input", () => {
+  christmasSet = christmas.checked;
+  save();
+});
 const swatches = $("skin-colors");
 for (const [name, { label, shades }] of Object.entries(COLORS)) {
   const radio = Object.assign(document.createElement("input"), { type: "radio", name: "skinColor", value: name, title: label });
@@ -66,6 +74,7 @@ function readForm(): Settings {
     emoteEverySec: Number(fields.emoteEverySec.value),
     skinColor: skinColor(),
     skinAccessory: select.value,
+    ...(christmasSet !== undefined && { christmas: christmasSet }),
   };
 }
 
@@ -165,6 +174,8 @@ $("quit").addEventListener("click", () => invoke("quit"));
   fields.petScale.value = String(s.petScale ?? 1);
   fields.emotes.checked = s.emotes;
   fields.emoteEverySec.value = String(s.emoteEverySec);
+  christmasSet = s.christmas;
+  christmas.checked = christmasOn(christmasSet, new Date());
   accessory = s.skinAccessory;
   counters = { ...EMPTY, ...(await invoke<Counters>("get_achievements")) };
   renderAccessories();

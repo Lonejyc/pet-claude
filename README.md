@@ -44,6 +44,7 @@ s'inquiète quand une commande échoue, et te répond dans une bulle.</p>
   (`~/.claude/projects/…`) ; une alerte douce apparaît quand le contexte atteint 80 % (la compaction automatique approche). Le coût est une estimation à partir d'une grille de tarifs
   embarquée ; la taille de la fenêtre n'étant pas dans le transcript, elle est supposée à 200 000 tokens (1 000 000 dès que le contexte dépasse 200 000).
 - **Taille réglable** : de 70 % à 150 % (Réglages > Comportement), le pet grandit depuis ses pieds.
+- **Noël** : bonnet de Noël et bois de renne dans les accessoires, grelots à la fin d'une tâche et boîte à musique à l'endormissement. Une case dans Réglages > Fêtes ; tant qu'on n'y touche pas, c'est actif en décembre seulement.
 - **Succès locaux** : l'usage réel débloque des accessoires, à choisir dans Réglages > Apparence : casque de chantier (100 fichiers modifiés), lunettes de soleil
   (10 tests ou builds réparés), auréole (1 session sans erreur d'outil), couronne (3 sessions sans erreur). Les compteurs sont stockés dans un fichier local
   (`achievements.json`, dossier de l'app), jamais envoyés ; un accessoire déjà choisi reste affiché même s'il est à débloquer.
