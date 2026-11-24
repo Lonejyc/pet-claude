@@ -1,5 +1,5 @@
 #!/bin/sh
-# Construit l'image disque : installer/pet-claude-<version>.dmg (l'app et un raccourci vers Applications, à glisser-déposer).
+# Construit l'image disque : installer/Claude-pet-<version>.dmg (l'app et un raccourci vers Applications, à glisser-déposer).
 # Hooks Claude Code et lancement au démarrage sont activés par l'app elle-même à sa première ouverture (cf. setup.rs, first_run_in) :
 # même résultat que le .pkg avec ses cases cochées par défaut.
 set -e
@@ -7,13 +7,13 @@ set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"
 OUT="$HERE/build-dmg"
 VERSION=$(python3 -c "import json;print(json.load(open('$HERE/../app/src-tauri/tauri.conf.json'))['version'])")
-DMG="$HERE/pet-claude-$VERSION.dmg"
-VOL="pet-claude"
+DMG="$HERE/Claude-pet-$VERSION.dmg"
+VOL="Claude pet"
 
 rm -rf "$OUT"; mkdir -p "$OUT/stage"
 (cd "$HERE/../app" && npm run tauri build -- --bundles app)
-cp -R "$HERE/../app/src-tauri/target/release/bundle/macos/pet-claude.app" "$OUT/stage/"
-codesign --force --deep --sign - "$OUT/stage/pet-claude.app"   # signature ad hoc : requise pour lancer un binaire arm64
+cp -R "$HERE/../app/src-tauri/target/release/bundle/macos/Claude pet.app" "$OUT/stage/"
+codesign --force --deep --sign - "$OUT/stage/Claude pet.app"   # signature ad hoc : requise pour lancer un binaire arm64
 ln -s /Applications "$OUT/stage/Applications"
 
 # image modifiable, mise en page de la fenêtre (icônes côte à côte), puis compression
@@ -31,7 +31,7 @@ tell application "Finder"
     set opts to the icon view options of container window
     set arrangement of opts to not arranged
     set icon size of opts to 112
-    set position of item "pet-claude.app" of container window to {135, 150}
+    set position of item "Claude pet.app" of container window to {135, 150}
     set position of item "Applications" of container window to {405, 150}
     close
     open

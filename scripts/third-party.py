@@ -16,7 +16,7 @@ pkg = json.loads((root / "app/package.json").read_text())
 npm = sorted(pkg.get("dependencies", {}))
 
 out = ["# Licences des dépendances\n",
-       "pet-claude est publié sous licence MIT (voir `LICENSE`). Il embarque les bibliothèques suivantes, sous leurs propres licences.",
+       "Claude pet est publié sous licence MIT (voir `LICENSE`). Il embarque les bibliothèques suivantes, sous leurs propres licences.",
        "Fichier généré par `scripts/third-party.py` ; il liste les crates réellement compilées pour macOS Apple Silicon.\n",
        "## Résumé par licence\n", "| Licence | Crates |", "|---|---|"]
 out += [f"| {lic} | {n} |" for lic, n in by_license.most_common()]

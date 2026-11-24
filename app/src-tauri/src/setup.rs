@@ -542,9 +542,9 @@ mod tests {
     fn login_agent_is_written_and_removed() {
         let home = temp_home("login");
         assert!(set_login_in(&home, true, "/tmp/dev/target/debug/app").is_err(), "refusé hors d'une app installée");
-        set_login_in(&home, true, "/Applications/pet-claude.app/Contents/MacOS/app").unwrap();
+        set_login_in(&home, true, "/Applications/Claude pet.app/Contents/MacOS/app").unwrap();
         let plist = std::fs::read_to_string(login_plist(&home, IDENTIFIER)).unwrap();
-        assert!(plist.contains(IDENTIFIER) && plist.contains("/Applications/pet-claude.app/Contents/MacOS/app") && plist.contains("RunAtLoad"));
+        assert!(plist.contains(IDENTIFIER) && plist.contains("/Applications/Claude pet.app/Contents/MacOS/app") && plist.contains("RunAtLoad"));
         set_login_in(&home, false, "").unwrap();
         assert!(!login_plist(&home, IDENTIFIER).exists());
     }
@@ -552,8 +552,8 @@ mod tests {
     #[test]
     fn first_run_enables_hooks_and_login_once() {
         let home = temp_home("firstrun");
-        let exe = "/Applications/pet-claude.app/Contents/MacOS/app";
-        assert!(!first_run_in(&home, "/Volumes/pet-claude/pet-claude.app/Contents/MacOS/app").unwrap(), "depuis le .dmg : rien");
+        let exe = "/Applications/Claude pet.app/Contents/MacOS/app";
+        assert!(!first_run_in(&home, "/Volumes/Claude pet/Claude pet.app/Contents/MacOS/app").unwrap(), "depuis le .dmg : rien");
         assert!(!first_run_in(&home, "/tmp/dev/target/debug/app").unwrap(), "développement : rien");
         assert!(first_run_in(&home, exe).unwrap());
         assert!(hooks_installed_in(&home, &token_in(&home)) && login_plist(&home, IDENTIFIER).exists());
@@ -569,7 +569,7 @@ mod tests {
         let home = temp_home("firstrun-existing");
         std::fs::create_dir_all(support_dir(&home, IDENTIFIER)).unwrap();
         std::fs::write(settings_path(&home), "{}").unwrap();
-        assert!(!first_run_in(&home, "/Applications/pet-claude.app/Contents/MacOS/app").unwrap());
+        assert!(!first_run_in(&home, "/Applications/Claude pet.app/Contents/MacOS/app").unwrap());
         assert!(!hooks_present_in(&home) && !login_plist(&home, IDENTIFIER).exists());
         assert!(configured_marker(&home).exists());
     }
@@ -581,7 +581,7 @@ mod tests {
         std::fs::write(settings_path_for(&home, LEGACY_IDENTIFIER), r#"{"cooldownSec": 30}"#).unwrap();
         std::fs::create_dir_all(home.join("Library/LaunchAgents")).unwrap();
         std::fs::write(login_plist(&home, LEGACY_IDENTIFIER), "<plist/>").unwrap();
-        migrate_legacy_in(&home, Some("/Applications/pet-claude.app/Contents/MacOS/app"));
+        migrate_legacy_in(&home, Some("/Applications/Claude pet.app/Contents/MacOS/app"));
         assert_eq!(std::fs::read_to_string(settings_path(&home)).unwrap(), r#"{"cooldownSec": 30}"#);
         assert!(!login_plist(&home, LEGACY_IDENTIFIER).exists());
         assert!(login_plist(&home, IDENTIFIER).exists(), "le lancement au démarrage reste activé");

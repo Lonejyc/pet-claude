@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <installer-gui-script minSpecVersion="2">
-  <title>pet-claude</title>
+  <title>Claude pet</title>
   <welcome file="welcome.html"/>
   <readme file="readme.html"/>
   <conclusion file="conclusion.html"/>
@@ -13,7 +13,7 @@
     <line choice="launch"/>
   </choices-outline>
 
-  <choice id="app" title="pet-claude" description="L'application, copiée dans Applications." enabled="false" start_selected="true">
+  <choice id="app" title="Claude pet" description="L'application, copiée dans Applications." enabled="false" start_selected="true">
     <pkg-ref id="io.github.lonejyc.pet-claude.app"/>
   </choice>
   <choice id="hooks" title="Connecter Claude Code (recommandé)" description="Ajoute cinq hooks dans ~/.claude/settings.json (sauvegarde faite avant). Sans eux, le pet ne voit aucune de tes sessions Claude Code." start_selected="true">

@@ -77,7 +77,7 @@ fn menu_bar_icon(app: &tauri::App) -> tauri::Result<()> {
     TrayIconBuilder::with_id("pet-claude")
         .icon(tauri::image::Image::from_bytes(include_bytes!("../icons/tray.png"))?)
         .icon_as_template(true) // silhouette noire que macOS teinte (blanche en mode sombre)
-        .tooltip("pet-claude")
+        .tooltip("Claude pet")
         .menu(&tauri::menu::Menu::new(app)?)
         .on_menu_event(|app, e| menu::on_event(app, e.id().as_ref()))
         // le survol précède le clic : les chiffres sont à jour à l'ouverture du menu
@@ -106,7 +106,7 @@ pub fn open_settings(app: &tauri::AppHandle) {
         return;
     }
     let built = tauri::WebviewWindowBuilder::new(app, "settings", tauri::WebviewUrl::App("settings.html".into()))
-        .title("Réglages de pet-claude")
+        .title("Réglages de Claude pet")
         .inner_size(460.0, 640.0)
         .resizable(false)
         .build();

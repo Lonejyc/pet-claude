@@ -1,6 +1,6 @@
 <p align="center"><img src="docs/images/icone.png?v=2" alt="Le pet : un bloc orange en 3D avec un bonnet de Noël" width="180"></p>
 
-<h1 align="center">pet-claude</h1>
+<h1 align="center">Claude pet</h1>
 
 <p align="center">Un petit compagnon 3D qui vit sur ton bureau macOS et réagit à ce que fait <b>Claude Code</b> :<br>
 il lit avec des lunettes, tape sur son clavier, martèle quand Claude modifie un fichier,<br>
@@ -13,8 +13,8 @@ s'inquiète quand une commande échoue, et te répond dans une bulle.</p>
 # Pour les utilisateurs
 
 ## Installer
-1. Télécharge `pet-claude-<version>.dmg` depuis la [page des releases](https://github.com/Lonejyc/pet-claude/releases) et ouvre-le.
-2. Glisse `pet-claude.app` sur **Applications**, puis lance-la. Elle n'est pas signée par un compte développeur Apple : **clic droit sur l'app, Ouvrir** la première fois.
+1. Télécharge `Claude-pet-<version>.dmg` depuis la [page des releases](https://github.com/Lonejyc/pet-claude/releases) et ouvre-le.
+2. Glisse `Claude pet.app` sur **Applications**, puis lance-la. Elle n'est pas signée par un compte développeur Apple : **clic droit sur l'app, Ouvrir** la première fois.
 3. À la toute première ouverture, l'app active seule les hooks Claude Code et le lancement au démarrage. Rien n'est refait ensuite : tout se change dans les Réglages.
 4. Relance tes sessions Claude Code déjà ouvertes pour que le pet les voie.
 
@@ -38,7 +38,7 @@ Prérequis : macOS sur Apple Silicon, [Claude Code](https://claude.com/claude-co
 | `/settings`, `/quit`, `/emote` dans le champ | idem au clavier, ou joue une emote |
 
 ## Vie privée et ce qui est modifié
-- Fichiers touchés : `/Applications/pet-claude.app`, `~/.claude/settings.json` (neuf hooks ajoutés à côté des tiens, sauvegarde dans `settings.json.bak-pet-claude`), `~/Library/LaunchAgents/io.github.lonejyc.pet-claude.plist` (optionnel) et `~/Library/Application Support/io.github.lonejyc.pet-claude/` (réglages, compteurs de succès, secret).
+- Fichiers touchés : `/Applications/Claude pet.app`, `~/.claude/settings.json` (neuf hooks ajoutés à côté des tiens, sauvegarde dans `settings.json.bak-pet-claude`), `~/Library/LaunchAgents/io.github.lonejyc.pet-claude.plist` (optionnel) et `~/Library/Application Support/io.github.lonejyc.pet-claude/` (réglages, compteurs de succès, secret).
 - Lecture seule : transcripts `~/.claude/projects/**` (coût estimé), `~/.claude.json` et le token du Keychain (limites du forfait, envoyé uniquement à `api.anthropic.com`).
 - Aucune donnée ne quitte ta machine, sauf ce que Claude lit lui-même : une question du mini-chat ou un fichier déposé est un appel normal à Claude.
 - Le serveur local écoute sur `127.0.0.1:4242` seulement, n'accepte que les requêtes portant son secret, et aucune route ne peut approuver une permission : seul un clic dans la fenêtre du pet le peut. Le mini-chat n'a que `Read`, `Grep` et `Glob`.
@@ -91,4 +91,4 @@ native.rs (NSPanel, souris, écrans)   menu.rs (barre de menus)   mic.rs (mode f
 Les modifications de `~/.claude/settings.json` doivent rester atomiques, sauvegardées, et refusées sans rien écrire si le fichier n'est pas du JSON valide. Une décision de permission ne doit jamais pouvoir venir d'une route du serveur local. Lance les tests et le lint avant d'ouvrir une PR.
 
 ## Licence
-Code sous **licence MIT** ([`LICENSE`](LICENSE)) ; licences des dépendances dans [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md). pet-claude est un projet indépendant, non affilié à Anthropic ; « Claude » et « Claude Code » sont des marques d'Anthropic. Logiciel fourni « tel quel », sans garantie.
+Code sous **licence MIT** ([`LICENSE`](LICENSE)) ; licences des dépendances dans [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md). Claude pet est un projet indépendant, non affilié à Anthropic ; « Claude » et « Claude Code » sont des marques d'Anthropic. Logiciel fourni « tel quel », sans garantie.

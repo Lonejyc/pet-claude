@@ -101,7 +101,7 @@ fn build(app: &AppHandle, plan: Option<Value>, local: Option<Value>, focus: Opti
     menu.append(&MenuItem::with_id(app, "toggle", if hidden { "Afficher le pet" } else { "Masquer le pet" }, true, None::<&str>)?)?;
     menu.append(&MenuItem::with_id(app, "settings", "Réglages…", true, None::<&str>)?)?;
     menu.append(&sep()?)?;
-    menu.append(&MenuItem::with_id(app, "quit", "Quitter pet-claude", true, Some("Cmd+Q"))?)?;
+    menu.append(&MenuItem::with_id(app, "quit", "Quitter Claude pet", true, Some("Cmd+Q"))?)?;
     Ok(menu)
 }
 

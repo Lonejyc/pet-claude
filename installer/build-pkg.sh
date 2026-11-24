@@ -9,10 +9,10 @@ ARCH=$(uname -m)
 
 rm -rf "$OUT"; mkdir -p "$OUT/payload/Applications"
 (cd "$HERE/../app" && npm run tauri build -- --bundles app)
-cp -R "$HERE/../app/src-tauri/target/release/bundle/macos/pet-claude.app" "$OUT/payload/Applications/"
-codesign --force --deep --sign - "$OUT/payload/Applications/pet-claude.app"   # signature ad hoc : requise pour lancer un binaire arm64
+cp -R "$HERE/../app/src-tauri/target/release/bundle/macos/Claude pet.app" "$OUT/payload/Applications/"
+codesign --force --deep --sign - "$OUT/payload/Applications/Claude pet.app"   # signature ad hoc : requise pour lancer un binaire arm64
 
-pkgbuild --root "$OUT/payload" --identifier io.github.lonejyc.pet-claude.app --version "$VERSION" --install-location / --scripts "$HERE/scripts/app" "$OUT/app.pkg"
+pkgbuild --root "$OUT/payload" --identifier io.github.lonejyc.Claude pet.app --version "$VERSION" --install-location / --scripts "$HERE/scripts/app" "$OUT/app.pkg"
 for c in hooks login launch; do
   pkgbuild --nopayload --identifier "io.github.lonejyc.pet-claude.$c" --version "$VERSION" --scripts "$HERE/scripts/$c" "$OUT/$c.pkg"
 done

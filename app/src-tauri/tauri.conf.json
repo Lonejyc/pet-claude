@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "pet-claude",
+  "productName": "Claude pet",
   "version": "1.0.0",
   "identifier": "io.github.lonejyc.pet-claude",
   "build": {
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "pet-claude",
+        "title": "Claude pet",
         "width": 280,
         "height": 296,
         "transparent": true,
