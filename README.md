@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/images/icone.png" alt="Le pet : un bloc orange en 3D" width="180"></p>
+<p align="center"><img src="docs/images/icone.png?v=2" alt="Le pet : un bloc orange en 3D" width="180"></p>
 
 <h1 align="center">pet-claude</h1>
 
@@ -6,7 +6,7 @@
 il lit avec des lunettes, tape sur son clavier, martèle quand Claude modifie un fichier,<br>
 s'inquiète quand une commande échoue, et te répond dans une bulle.</p>
 
-<p align="center"><img src="docs/images/etats.png" alt="Les états du pet : au repos, lit, tape, modifie, cherche, s'inquiète, dort, sue, et un skin violet avec couronne" width="100%"></p>
+<p align="center"><img src="docs/images/etats.png?v=2" alt="Les états du pet : au repos, lit, tape, modifie, cherche, s'inquiète, dort, sue, et un skin violet avec couronne" width="100%"></p>
 
 > **Beta** : testé sur macOS (Apple Silicon) avec Claude Code. Voir « Limites connues ».
 > Téléchargement : [page des releases](https://github.com/Lonejyc/pet-claude/releases).
