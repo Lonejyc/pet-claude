@@ -1,9 +1,8 @@
 #!/bin/sh
-# Retire pet-claude : ferme l'app, retire hooks / personnalité / lancement au démarrage, puis supprime l'app.
+# Retire pet-claude : ferme l'app, retire hooks / lancement au démarrage, puis supprime l'app.
 APP=/Applications/pet-claude.app
 if [ -x "$APP/Contents/MacOS/app" ]; then
   "$APP/Contents/MacOS/app" --remove-hooks
-  "$APP/Contents/MacOS/app" --disable-style
   "$APP/Contents/MacOS/app" --disable-login
 fi
 /usr/bin/pkill -f "pet-claude.app/Contents/MacOS/app" 2>/dev/null

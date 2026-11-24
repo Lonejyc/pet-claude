@@ -84,7 +84,7 @@ deux bras carrés, huit pieds courts, des yeux rectangulaires. Il doit être att
 ## Installer
 1. Télécharge `pet-claude-<version>.pkg` depuis la [page des releases](https://github.com/Lonejyc/pet-claude/releases).
 2. Il n'est pas signé par un compte développeur Apple : **clic droit sur le fichier, Ouvrir** (sinon macOS refuse).
-3. Suis l'installateur : choisis ce qui est configuré (hooks Claude Code, lancement au démarrage, personnalité « Pet »).
+3. Suis l'installateur : choisis ce qui est configuré (hooks Claude Code, lancement au démarrage).
 4. Relance tes sessions Claude Code déjà ouvertes pour que le pet les voie.
 
 Prérequis : macOS sur Apple Silicon, [Claude Code](https://claude.com/claude-code) installé.
@@ -115,7 +115,7 @@ mode furtif, et un mode « emotes au lieu de dormir » (six seven, singe à cymb
   pour les limites du forfait), `~/.claude.json` (cache d'usage) et les transcripts `~/.claude/projects/**/*.jsonl` (coût estimé).
 - `~/.claude/settings.json` : neuf hooks (`curl` vers `localhost:4242`) **ajoutés à côté des tiens**, sauvegarde dans
   `settings.json.bak-pet-claude`. L'un d'eux, `PermissionRequest`, laisse le pet afficher « Autoriser / Refuser » : il attend ton clic jusqu'à 20 s, puis rend la main
-  à la boîte de dialogue de ton terminal (jamais d'« oui » par défaut). « Retirer » dans les Réglages (ou `uninstall.sh`) les enlève tous. Si tu coches la personnalité : `outputStyle: "Pet"` et `~/.claude/output-styles/pet.md`.
+  à la boîte de dialogue de ton terminal (jamais d'« oui » par défaut). « Retirer » dans les Réglages (ou `uninstall.sh`) les enlève tous.
 - `~/Library/LaunchAgents/io.github.lonejyc.pet-claude.plist` (lancement au démarrage, optionnel)
 - `~/Library/Application Support/io.github.lonejyc.pet-claude/` : tes réglages (`settings.json`), tes compteurs de succès (`achievements.json`) et le secret du pet (`token`, lisible par toi seul)
 
@@ -141,7 +141,7 @@ et un fichier déposé sur le pet est lu par Claude.
   les hooks pour qu'ils portent le secret.
 
 ## Désinstaller
-`./scripts/uninstall.sh` retire les hooks, la personnalité, le lancement au démarrage et l'app.
+`./scripts/uninstall.sh` retire les hooks, le lancement au démarrage et l'app.
 
 ## Limites connues (beta)
 - Apple Silicon uniquement, app non signée / non notarisée.

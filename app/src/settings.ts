@@ -4,7 +4,7 @@ import { EMPTY, isUnlocked, progress, type Counters } from "./achievements";
 import { ACCESSORIES, COLORS } from "./skins";
 
 type Settings = { cooldownSec: number; sleepAfterSec: number; confetti: boolean; sound: boolean; soundMode: "all" | "alerts"; chatShortcut: string; stealth: boolean; petScale: number; volume: number; emotes: boolean; emoteEverySec: number; skinColor: string; skinAccessory: string };
-type Status = { hooks: boolean; style: boolean; login: boolean; installed: boolean };
+type Status = { hooks: boolean; login: boolean; installed: boolean };
 
 const $ = <T extends HTMLElement>(id: string) => document.querySelector<T>(`#${id}`)!;
 const error = $("error");
@@ -123,9 +123,8 @@ window.addEventListener(
   true,
 );
 
-// ---- système : lancement au démarrage, personnalité globale, hooks
+// ---- système : lancement au démarrage, hooks
 const login = $<HTMLInputElement>("login");
-const style = $<HTMLInputElement>("style");
 const hooksBtn = $<HTMLButtonElement>("hooks-btn");
 
 async function refreshStatus() {
@@ -133,7 +132,6 @@ async function refreshStatus() {
   login.checked = st.login;
   login.disabled = !st.installed && !st.login;
   $("login-hint").textContent = st.installed ? "À la prochaine ouverture de session" : "Disponible une fois l'app installée dans Applications";
-  style.checked = st.style;
   $("hooks-state").textContent = st.hooks ? "Installés : le pet voit toutes tes sessions Claude" : "Non installés ou à mettre à jour : le pet ne voit pas tes sessions";
   hooksBtn.textContent = st.hooks ? "Retirer" : "Installer";
   hooksBtn.dataset.on = String(!st.hooks);
@@ -150,7 +148,6 @@ async function change(command: string, on: boolean) {
 }
 
 login.addEventListener("change", () => change("login_enable", login.checked));
-style.addEventListener("change", () => change("style_enable", style.checked));
 hooksBtn.addEventListener("click", () => change("hooks_enable", hooksBtn.dataset.on === "true"));
 $("quit").addEventListener("click", () => invoke("quit"));
 

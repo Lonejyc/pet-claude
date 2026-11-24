@@ -164,17 +164,12 @@ fn open_settings_cmd(app: tauri::AppHandle) {
 #[tauri::command]
 fn setup_status() -> serde_json::Value {
     let installed = std::env::current_exe().is_ok_and(|e| e.to_string_lossy().contains(".app/Contents/MacOS/"));
-    serde_json::json!({ "hooks": setup::hooks_installed(), "style": setup::style_enabled(), "login": setup::login_enabled(), "installed": installed })
+    serde_json::json!({ "hooks": setup::hooks_installed(), "login": setup::login_enabled(), "installed": installed })
 }
 
 #[tauri::command]
 fn hooks_enable(on: bool) -> Result<(), String> {
     setup::set_hooks(on)
-}
-
-#[tauri::command]
-fn style_enable(on: bool) -> Result<(), String> {
-    setup::set_style(on)
 }
 
 #[tauri::command]
@@ -221,7 +216,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_nspanel::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![native::screens, native::window_origin, native::set_window_origin, native::mouse, native::frontmost_app, native::file_size, native::focus_app, native::set_chat_open, native::set_hit_regions, native::set_sleeping, chat::ask, chat::copy_text, gitdiff::git_diff_size, permission::decide, quit, open_settings_cmd, plan_usage, local_usage, session_stats, toggle_pet, pet_hidden, setup_status, hooks_enable, style_enable, login_enable, get_settings, save_settings, get_achievements, save_achievements])
+        .invoke_handler(tauri::generate_handler![native::screens, native::window_origin, native::set_window_origin, native::mouse, native::frontmost_app, native::file_size, native::focus_app, native::set_chat_open, native::set_hit_regions, native::set_sleeping, chat::ask, chat::copy_text, gitdiff::git_diff_size, permission::decide, quit, open_settings_cmd, plan_usage, local_usage, session_stats, toggle_pet, pet_hidden, setup_status, hooks_enable, login_enable, get_settings, save_settings, get_achievements, save_achievements])
         .setup(|app| {
             // Accessory : pas d'icône dans le Dock, requis pour s'afficher au-dessus du plein écran.
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);

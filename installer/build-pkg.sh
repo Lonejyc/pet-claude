@@ -13,7 +13,7 @@ cp -R "$HERE/../app/src-tauri/target/release/bundle/macos/pet-claude.app" "$OUT/
 codesign --force --deep --sign - "$OUT/payload/Applications/pet-claude.app"   # signature ad hoc : requise pour lancer un binaire arm64
 
 pkgbuild --root "$OUT/payload" --identifier io.github.lonejyc.pet-claude.app --version "$VERSION" --install-location / --scripts "$HERE/scripts/app" "$OUT/app.pkg"
-for c in hooks login style launch; do
+for c in hooks login launch; do
   pkgbuild --nopayload --identifier "io.github.lonejyc.pet-claude.$c" --version "$VERSION" --scripts "$HERE/scripts/$c" "$OUT/$c.pkg"
 done
 sed "s/__VERSION__/$VERSION/g; s/__ARCH__/$ARCH/g" "$HERE/distribution.xml" > "$OUT/distribution.xml"

@@ -86,7 +86,7 @@ function setState(state: string, thenAfterMs?: number, then = "idle") {
 // Le pet parle sur la 1re ligne de la réponse (cf. output style) : première phrase, sans markdown, coupée à MAX_CHARS.
 const MAX_CHARS = 110;
 const firstSentence = (text: string) => {
-  const sentence = text.replace(/[*`#>_🟧]/gu, "").trim().split(/(?<=[.!?:])\s|\n/)[0];
+  const sentence = text.replace(/[*`#>_]/gu, "").trim().split(/(?<=[.!?:])\s|\n/)[0];
   return sentence.length > MAX_CHARS ? sentence.slice(0, MAX_CHARS - 1) + "…" : sentence;
 };
 
@@ -815,7 +815,7 @@ type Asking = { id: string; session?: Session; raw: string; question: string };
 let asking: Asking | null = null;
 
 const shorten = (text: string) => {
-  const t = text.replace(/[*`#>_🟧]/gu, "").replace(/\s+/g, " ").trim();
+  const t = text.replace(/[*`#>_]/gu, "").replace(/\s+/g, " ").trim();
   return t.length > ANSWER_MAX_CHARS ? t.slice(0, ANSWER_MAX_CHARS - 1) + "…" : t;
 };
 

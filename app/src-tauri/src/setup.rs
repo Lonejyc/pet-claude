@@ -1,4 +1,4 @@
-//! Configuration du pet sur la machine : hooks Claude Code, personnalité globale, lancement au démarrage, réglages, secret.
+//! Configuration du pet sur la machine : hooks Claude Code, lancement au démarrage, réglages, secret.
 //! Utilisé par la fenêtre de réglages ET par la ligne de commande (`app --install-hooks`, appelée par l'installateur .pkg).
 //! Toutes les fonctions `*_in` prennent le dossier personnel en paramètre : c'est ce qui permet de les tester sur un faux dossier.
 use serde_json::{json, Map, Value};
@@ -7,7 +7,6 @@ use std::path::{Path, PathBuf};
 pub const IDENTIFIER: &str = "io.github.lonejyc.pet-claude";
 const LEGACY_IDENTIFIER: &str = "fr.perso.petclaude"; // identifiant des betas 1 et 2, migré au démarrage
 pub const EVENTS: [&str; 9] = ["SessionStart", "SessionEnd", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "Notification", "PermissionRequest", "Stop"];
-const STYLE_MD: &str = include_str!("../../../.claude/output-styles/pet.md");
 
 fn real_home() -> PathBuf {
     PathBuf::from(std::env::var_os("HOME").expect("HOME non défini"))
@@ -153,33 +152,6 @@ pub fn refresh_hooks_if_outdated() {
         }
 }
 
-// ---- personnalité globale
-
-fn style_enabled_in(home: &Path) -> bool {
-    read_claude_settings(home).is_ok_and(|s| s["outputStyle"] == "Pet")
-}
-
-fn set_style_in(home: &Path, on: bool) -> Result<(), String> {
-    let mut settings = read_claude_settings(home)?;
-    let root = settings.as_object_mut().ok_or("~/.claude/settings.json n'est pas un objet JSON")?;
-    if on {
-        let dir = home.join(".claude/output-styles");
-        std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-        write_atomic(&dir.join("pet.md"), STYLE_MD)?;
-        root.insert("outputStyle".into(), json!("Pet"));
-    } else if root.get("outputStyle") == Some(&json!("Pet")) {
-        root.remove("outputStyle");
-    }
-    write_claude_settings(home, &settings)
-}
-
-pub fn style_enabled() -> bool {
-    style_enabled_in(&real_home())
-}
-pub fn set_style(on: bool) -> Result<(), String> {
-    set_style_in(&real_home(), on)
-}
-
 // ---- lancement au démarrage
 
 fn login_plist(home: &Path, id: &str) -> PathBuf {
@@ -302,12 +274,10 @@ pub fn run_cli() -> bool {
     let result = match flag.as_str() {
         "--install-hooks" => set_hooks(true),
         "--remove-hooks" => set_hooks(false),
-        "--enable-style" => set_style(true),
-        "--disable-style" => set_style(false),
         "--enable-login" => set_login(true),
         "--disable-login" => set_login(false),
         "--status" => {
-            println!("hooks={} style={} login={}", hooks_installed(), style_enabled(), login_enabled());
+            println!("hooks={} login={}", hooks_installed(), login_enabled());
             Ok(())
         }
         _ => return false,
@@ -459,7 +429,6 @@ mod tests {
         let home = temp_home("invalid");
         std::fs::write(claude_settings_path(&home), "{ pas du json").unwrap();
         assert!(set_hooks_in(&home, TOKEN, true).is_err());
-        assert!(set_style_in(&home, true).is_err());
         assert_eq!(std::fs::read_to_string(claude_settings_path(&home)).unwrap(), "{ pas du json");
         assert!(!hooks_installed_in(&home, TOKEN));
     }
@@ -507,7 +476,6 @@ mod tests {
     fn writes_leave_no_temporary_file() {
         let home = temp_home("atomic");
         set_hooks_in(&home, TOKEN, true).unwrap();
-        set_style_in(&home, true).unwrap();
         let leftovers: Vec<_> = std::fs::read_dir(home.join(".claude")).unwrap().flatten().filter(|e| e.file_name().to_string_lossy().contains("tmp-pet-claude")).collect();
         assert!(leftovers.is_empty());
     }
@@ -519,21 +487,6 @@ mod tests {
         std::fs::set_permissions(claude_settings_path(&home), std::fs::Permissions::from_mode(0o600)).unwrap();
         set_hooks_in(&home, TOKEN, true).unwrap();
         assert_eq!(std::fs::metadata(claude_settings_path(&home)).unwrap().permissions().mode() & 0o777, 0o600);
-    }
-
-    #[test]
-    fn style_on_and_off_only_touches_its_own_value() {
-        let home = temp_home("style");
-        write_claude(&home, &json!({ "model": "x" }));
-        set_style_in(&home, true).unwrap();
-        assert!(style_enabled_in(&home));
-        assert!(home.join(".claude/output-styles/pet.md").exists());
-        set_style_in(&home, false).unwrap();
-        assert!(!style_enabled_in(&home));
-
-        write_claude(&home, &json!({ "outputStyle": "Explanatory" }));
-        set_style_in(&home, false).unwrap();
-        assert_eq!(read_claude(&home)["outputStyle"], "Explanatory", "le style de l'utilisateur ne doit pas être retiré");
     }
 
     #[test]
