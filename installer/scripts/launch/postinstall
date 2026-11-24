@@ -5,6 +5,8 @@ USER_HOME=$(/usr/bin/dscl . -read "/Users/$USER_NAME" NFSHomeDirectory | /usr/bi
 APP=/Applications/pet-claude.app/Contents/MacOS/app
 LOG=/tmp/pet-claude-install.log
 as_user() { /usr/bin/sudo -u "$USER_NAME" env HOME="$USER_HOME" "$@" >>"$LOG" 2>&1; }
+# le .pkg a déjà appliqué les choix de l'utilisateur : pas de réglages par défaut à la première ouverture
+as_user "$APP" --mark-configured
 # lance le pet dans la session graphique de l'utilisateur, après la configuration
 /bin/launchctl asuser "$(/usr/bin/id -u "$USER_NAME")" /usr/bin/sudo -u "$USER_NAME" /usr/bin/open /Applications/pet-claude.app >>"$LOG" 2>&1
 exit 0

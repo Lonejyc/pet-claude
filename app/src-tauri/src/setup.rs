@@ -245,6 +245,41 @@ pub fn write_settings(settings: &Value) -> Result<(), String> {
     write_atomic(&settings_path(&real_home()), &serde_json::to_string_pretty(settings).map_err(|e| e.to_string())?)
 }
 
+// ---- première ouverture (installation par glisser-déposer depuis le .dmg) : mêmes réglages que le .pkg avec ses cases cochées par défaut
+
+fn configured_marker(home: &Path) -> PathBuf {
+    support_dir(home, IDENTIFIER).join("configured")
+}
+
+pub fn mark_configured() -> Result<(), String> {
+    write_atomic(&configured_marker(&real_home()), "")
+}
+
+/// Hooks Claude Code et lancement au démarrage activés à la toute première ouverture, une seule fois : on ne les remet jamais après un choix de l'utilisateur.
+/// Rien n'est fait si l'app tourne depuis le .dmg ou un dossier de développement (le lancement au démarrage pointerait vers le disque monté),
+/// ni si la machine a déjà une configuration (réglages enregistrés, hooks, lancement au démarrage : mise à jour d'une version antérieure).
+fn first_run_in(home: &Path, exe: &str) -> Result<bool, String> {
+    let installed = exe.starts_with("/Applications/") || exe.starts_with(&format!("{}/Applications/", home.display()));
+    if !installed || !exe.contains(".app/Contents/MacOS/") || configured_marker(home).exists() {
+        return Ok(false);
+    }
+    let already = settings_path(home).exists() || hooks_present_in(home) || login_plist(home, IDENTIFIER).exists();
+    write_atomic(&configured_marker(home), "")?;
+    if already {
+        return Ok(false);
+    }
+    set_hooks_in(home, &token_in(home), true)?;
+    set_login_in(home, true, exe)?;
+    Ok(true)
+}
+
+pub fn apply_first_run_defaults() {
+    let Ok(exe) = std::env::current_exe() else { return };
+    if let Err(e) = first_run_in(&real_home(), &exe.to_string_lossy()) {
+        eprintln!("première ouverture : {e}");
+    }
+}
+
 // ---- migration depuis les betas 1 et 2 (ancien identifiant)
 
 pub fn migrate_legacy() {
@@ -276,6 +311,7 @@ pub fn run_cli() -> bool {
         "--install-hooks" => set_hooks(true),
         "--remove-hooks" => set_hooks(false),
         "--enable-login" => set_login(true),
+        "--mark-configured" => mark_configured(), // le .pkg a déjà fait ses choix : pas de réglages par défaut à la première ouverture
         "--disable-login" => set_login(false),
         "--status" => {
             println!("hooks={} login={}", hooks_installed(), login_enabled());
@@ -511,6 +547,31 @@ mod tests {
         assert!(plist.contains(IDENTIFIER) && plist.contains("/Applications/pet-claude.app/Contents/MacOS/app") && plist.contains("RunAtLoad"));
         set_login_in(&home, false, "").unwrap();
         assert!(!login_plist(&home, IDENTIFIER).exists());
+    }
+
+    #[test]
+    fn first_run_enables_hooks_and_login_once() {
+        let home = temp_home("firstrun");
+        let exe = "/Applications/pet-claude.app/Contents/MacOS/app";
+        assert!(!first_run_in(&home, "/Volumes/pet-claude/pet-claude.app/Contents/MacOS/app").unwrap(), "depuis le .dmg : rien");
+        assert!(!first_run_in(&home, "/tmp/dev/target/debug/app").unwrap(), "développement : rien");
+        assert!(first_run_in(&home, exe).unwrap());
+        assert!(hooks_installed_in(&home, &token_in(&home)) && login_plist(&home, IDENTIFIER).exists());
+        // l'utilisateur change d'avis : on n'y retouche jamais
+        set_hooks_in(&home, &token_in(&home), false).unwrap();
+        set_login_in(&home, false, "").unwrap();
+        assert!(!first_run_in(&home, exe).unwrap());
+        assert!(!hooks_present_in(&home) && !login_plist(&home, IDENTIFIER).exists());
+    }
+
+    #[test]
+    fn first_run_respects_an_existing_configuration() {
+        let home = temp_home("firstrun-existing");
+        std::fs::create_dir_all(support_dir(&home, IDENTIFIER)).unwrap();
+        std::fs::write(settings_path(&home), "{}").unwrap();
+        assert!(!first_run_in(&home, "/Applications/pet-claude.app/Contents/MacOS/app").unwrap());
+        assert!(!hooks_present_in(&home) && !login_plist(&home, IDENTIFIER).exists());
+        assert!(configured_marker(&home).exists());
     }
 
     #[test]

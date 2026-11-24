@@ -83,9 +83,9 @@ deux bras carrés, huit pieds courts, des yeux rectangulaires. Il doit être att
 **Réglages** : une fenêtre sobre aux tons chauds (fond crème, ou brun foncé en mode sombre), cartes blanches, interrupteurs arrondis et l'orange du pet comme unique accent.
 
 ## Installer
-1. Télécharge `pet-claude-<version>.pkg` depuis la [page des releases](https://github.com/Lonejyc/pet-claude/releases).
-2. Il n'est pas signé par un compte développeur Apple : **clic droit sur le fichier, Ouvrir** (sinon macOS refuse).
-3. Suis l'installateur : choisis ce qui est configuré (hooks Claude Code, lancement au démarrage).
+1. Télécharge `pet-claude-<version>.dmg` depuis la [page des releases](https://github.com/Lonejyc/pet-claude/releases) et ouvre-le.
+2. Glisse `pet-claude.app` sur le raccourci **Applications**, puis lance-la depuis Applications. Elle n'est pas signée par un compte développeur Apple : **clic droit sur l'app, Ouvrir** la première fois (sinon macOS refuse).
+3. À la toute première ouverture, l'app active seule ce que l'installateur .pkg cochait par défaut : hooks Claude Code (cinq hooks dans `~/.claude/settings.json`, sauvegarde faite avant) et lancement au démarrage de session. Rien n'est refait ensuite : tout se change dans les Réglages. Si l'app tourne depuis le .dmg lui-même, ou si une configuration existe déjà (mise à jour), elle ne touche à rien.
 4. Relance tes sessions Claude Code déjà ouvertes pour que le pet les voie.
 
 Prérequis : macOS sur Apple Silicon, [Claude Code](https://claude.com/claude-code) installé.
@@ -176,7 +176,8 @@ cd app && npm test && npm run build && cd src-tauri && cargo test && cargo clipp
 ./scripts/demo.sh                               # rejoue toutes les animations sans Claude
 ./scripts/make-icon.sh                          # régénère l'icône depuis le pet 3D (serveur de dev lancé)
 ./scripts/make-readme-images.sh                 # régénère les images du README depuis le pet 3D
-./installer/build-pkg.sh                        # construit l'installateur .pkg
+./installer/build-dmg.sh                        # construit l'image disque .dmg (méthode d'installation recommandée)
+./installer/build-pkg.sh                        # construit l'installateur .pkg (assistant avec cases à cocher)
 ```
 Stack : Tauri 2, TypeScript, CSS 3D, `tauri-nspanel`, `tauri-plugin-global-shortcut`. Fenêtre en `NSPanel` non activant ; positions et souris en
 coordonnées natives macOS (les conversions de Tauri se mélangent entre écrans d'échelles différentes).

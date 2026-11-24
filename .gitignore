@@ -1,3 +1,5 @@
 installer/build/
 installer/*.pkg
 .idea/
+installer/build-dmg/
+installer/*.dmg

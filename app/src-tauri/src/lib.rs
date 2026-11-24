@@ -212,6 +212,7 @@ pub fn run() {
         return;
     }
     setup::migrate_legacy();
+    setup::apply_first_run_defaults();
     setup::refresh_hooks_if_outdated();
     tauri::Builder::default()
         .plugin(tauri_nspanel::init())
