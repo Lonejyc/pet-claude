@@ -19,7 +19,7 @@ codesign --force --deep --sign - "$OUT/stage/Claude pet.app"   # signature ad ho
 
 # archive de mise à jour : refaite APRÈS le codesign (celle de Tauri contient l'app non signée, qui ne se lancerait pas en arm64), puis signée + latest.json
 TAR="$HERE/Claude-pet-$VERSION.app.tar.gz"
-tar -czf "$TAR" -C "$OUT/stage" "Claude pet.app"
+COPYFILE_DISABLE=1 tar -czf "$TAR" -C "$OUT/stage" "Claude pet.app"
 (cd "$HERE/../app" && env -u TAURI_SIGNING_PRIVATE_KEY npm run tauri signer sign -- -f "$TAURI_SIGNING_PRIVATE_KEY" -p "" "$TAR" >/dev/null)
 python3 - "$VERSION" "$TAR" "$HERE/../docs/releases/$VERSION.md" "$HERE/latest.json" <<'PY'
 import json, sys, os, datetime

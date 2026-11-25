@@ -12,7 +12,7 @@ pub static UP_TO_DATE: AtomicBool = AtomicBool::new(false);
 
 /// Cherche une mise à jour ; toute erreur (hors ligne, pas de release…) est ignorée : on réessaiera au prochain démarrage.
 pub async fn check(app: &AppHandle) {
-    let found = async { app.updater().ok()?.check().await.ok()? }.await;
+    let found = find(app).await;
     UP_TO_DATE.store(found.is_none(), Ordering::Relaxed);
     *AVAILABLE.lock().unwrap() = found.map(|u| u.version);
     crate::menu::refresh(app);
@@ -20,10 +20,20 @@ pub async fn check(app: &AppHandle) {
 
 /// Télécharge, installe puis relance l'app.
 pub async fn install(app: &AppHandle) {
-    let update = async { app.updater().ok()?.check().await.ok()? }.await;
-    if let Some(update) = update
-        && update.download_and_install(|_, _| {}, || {}).await.is_ok()
-    {
-        app.restart();
+    if let Some(update) = find(app).await {
+        match update.download_and_install(|_, _| {}, || {}).await {
+            Ok(()) => app.restart(),
+            Err(e) => eprintln!("mise à jour : installation impossible : {e}"),
+        }
+    }
+}
+
+async fn find(app: &AppHandle) -> Option<tauri_plugin_updater::Update> {
+    match async { app.updater()?.check().await }.await {
+        Ok(update) => update,
+        Err(e) => {
+            eprintln!("mise à jour : vérification impossible : {e}");
+            None
+        }
     }
 }
