@@ -16,6 +16,17 @@
     <label>Volume <input id="vol" type="range" min="0" max="1" step="0.05" value="1" /></label>
     <div id="list"></div>
     <p><button id="all">Tout jouer à la suite</button></p>
+    <h2>Découper un son de clavier</h2>
+    <p>
+      <input id="file" type="file" accept="audio/*" />
+      <button id="full">Tout voir</button><button id="zoom">Zoom sur les frappes</button>
+    </p>
+    <canvas id="wave" width="900" height="160" style="width: 100%; max-width: 900px; background: #15123a; border-radius: 8px; cursor: crosshair"></canvas>
+    <p>Clique-glisse sur la forme d'onde pour ajouter une frappe (elle se joue au relâchement). Chaque lecture en tire une au hasard.</p>
+    <ol id="segs"></ol>
+    <button id="play">Jouer (frappe au hasard)</button><button id="clear">Tout effacer</button><button id="loop">Rafale (5 frappes)</button>
+    <label>Écart entre frappes (ms) : min <input id="gmin" type="number" value="150" style="width: 5em" /> max <input id="gmax" type="number" value="300" style="width: 5em" /></label>
+    <p id="out"></p>
     <script type="module">
       import { setSoundConfig, sound } from "/src/sound.ts";
       const names = Object.keys(sound);
@@ -28,6 +39,96 @@
       }
       document.getElementById("vol").oninput = (e) => setSoundConfig({ enabled: true, volume: +e.target.value });
       document.getElementById("all").onclick = () => names.forEach((n, i) => setTimeout(sound[n], i * 1200));
+
+      const cv = document.getElementById("wave"), g = cv.getContext("2d"), $ = (id) => document.getElementById(id);
+      const ac = new AudioContext();
+      let buf = null, v0 = 0, v1 = 1; // fenêtre visible, en secondes
+      let segs = [], cur = null; // segs : [{s, e}] en secondes ; cur : sélection en cours de glissement
+      const all = () => (cur ? [...segs, cur] : segs);
+      function draw() {
+        g.clearRect(0, 0, cv.width, cv.height);
+        if (!buf) return;
+        const d = buf.getChannelData(0), sr = buf.sampleRate, W = cv.width, H = cv.height;
+        g.fillStyle = "#8f86ff";
+        for (let x = 0; x < W; x++) {
+          const a = Math.floor((v0 + ((v1 - v0) * x) / W) * sr), b = Math.floor((v0 + ((v1 - v0) * (x + 1)) / W) * sr);
+          let m = 0;
+          for (let i = a; i < b && i < d.length; i++) m = Math.max(m, Math.abs(d[i]));
+          g.fillRect(x, (H * (1 - m)) / 2, 1, H * m);
+        }
+        const px = (t) => ((t - v0) / (v1 - v0)) * W;
+        for (const { s, e } of all()) {
+          g.fillStyle = "#4ade8044"; g.fillRect(px(s), 0, Math.max(2, px(e) - px(s)), H);
+          g.fillStyle = "#4ade80"; g.fillRect(px(s), 0, 2, H);
+          g.fillStyle = "#f87171"; g.fillRect(px(e) - 2, 0, 2, H);
+        }
+      }
+      function playSeg({ s, e }) {
+        if (!buf || e <= s) return;
+        ac.resume();
+        const src = ac.createBufferSource(), gain = ac.createGain(), t = ac.currentTime;
+        src.buffer = buf;
+        gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(1, t + 0.0005); // 0,5 ms : évite le clic de coupe
+        gain.gain.setValueAtTime(1, t + Math.max(0.0005, e - s - 0.002)); gain.gain.linearRampToValueAtTime(0, t + e - s);
+        src.connect(gain).connect(ac.destination);
+        src.start(t, s, e - s);
+      }
+      const play = () => segs.length && playSeg(segs[Math.floor(Math.random() * segs.length)]);
+      function update() {
+        const ms = (t) => Math.round(t * 1000);
+        $("segs").replaceChildren(...segs.map((q, i) => {
+          const li = document.createElement("li");
+          li.textContent = `${ms(q.s)} → ${ms(q.e)} ms (${ms(q.e - q.s)} ms) `;
+          const b = document.createElement("button");
+          b.textContent = "✕";
+          b.onclick = () => { segs.splice(i, 1); update(); };
+          const p = document.createElement("button");
+          p.textContent = "▶";
+          p.onclick = () => playSeg(q);
+          li.append(p, b);
+          return li;
+        }));
+        draw();
+      }
+      $("file").onchange = async (ev) => {
+        buf = await ac.decodeAudioData(await ev.target.files[0].arrayBuffer());
+        v0 = 0; v1 = buf.duration; segs = []; update();
+      };
+      let anchor = 0;
+      const at = (ev) => Math.max(0, Math.min(buf.duration, v0 + (ev.offsetX / cv.clientWidth) * (v1 - v0)));
+      cv.onpointerdown = (ev) => {
+        if (!buf) return;
+        cv.setPointerCapture(ev.pointerId);
+        anchor = at(ev);
+        cur = { s: anchor, e: anchor };
+        draw();
+      };
+      cv.onpointermove = (ev) => {
+        if (!cur) return;
+        const t = at(ev);
+        cur = { s: Math.min(anchor, t), e: Math.max(anchor, t) };
+        draw();
+      };
+      cv.onpointerup = () => {
+        if (!cur) return;
+        const q = cur;
+        cur = null;
+        if (q.e - q.s >= 0.002) { segs.push(q); playSeg(q); } // moins de 2 ms = simple clic, ignoré
+        update();
+      };
+      $("full").onclick = () => { if (buf) { v0 = 0; v1 = buf.duration; draw(); } };
+      $("zoom").onclick = () => {
+        if (!buf || !segs.length) return;
+        const s = Math.min(...segs.map((q) => q.s)), e = Math.max(...segs.map((q) => q.e)), m = (e - s) * 0.1 + 0.01;
+        v0 = Math.max(0, s - m); v1 = Math.min(buf.duration, e + m); draw();
+      };
+      $("clear").onclick = () => { segs = []; update(); };
+      $("play").onclick = play;
+      $("loop").onclick = () => {
+        const lo = +$("gmin").value, hi = Math.max(lo, +$("gmax").value);
+        let t = 0;
+        for (let i = 0; i < 5; i++) { setTimeout(play, t); t += lo + Math.random() * (hi - lo); }
+      };
     </script>
   </body>
 </html>

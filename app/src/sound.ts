@@ -133,9 +133,11 @@ const bell = (f: number, delay: number, ms: number) => {
 const VOICE_NOTES = [392, 440, 523, 587, 659];
 let lastVoice = 0;
 
-// Touches : trois claquements différents (fréquence du clic), jamais le même deux fois de suite.
-const KEYS = [2000, 2400, 2900];
+// Touches : 8 vraies frappes de clavier découpées dans un enregistrement (public/key.wav, mises bout à bout : [début, durée] en ms), jamais la même deux fois de suite.
+const KEYS = [[0, 117], [117, 81], [198, 96], [294, 96], [390, 77], [467, 68], [535, 93], [628, 89]];
 let lastKey = 0;
+let keySprite: AudioBuffer | null = null;
+fetch("/key.wav").then((r) => r.arrayBuffer()).then((b) => ctx.decodeAudioData(b)).then((b) => (keySprite = b));
 
 const raw = {
   // une syllabe de « voix » (façon Animal Crossing) : timbre doux de triangle + octave, petit souffle de consonne
@@ -195,12 +197,23 @@ const raw = {
     voice({ from: 230 * pitch, to: 140 * pitch, ms: 80, type: "sine", vol: 0.13, attack: 0.001, wet: 0.1 });
     voice({ from: 460, to: 360, ms: 40, type: "sine", vol: 0.03, attack: 0.001 });
   },
-  // frappe de clavier (calée sur un enregistrement) : clic sec de ~4 ms (1,5-4 kHz), puis « clac » plus faible ~9 ms après (touche en butée), aucun grave
+  // frappe de clavier : une des 8 frappes enregistrées, la hauteur suit l'allure des outils ; fondu de 1 ms en entrée/sortie contre les clics de coupe
   key: () => {
+    const b = start();
+    if (!b || !keySprite) return;
     lastKey = pickNot(KEYS.length, lastKey);
-    const f = jitter(KEYS[lastKey] * pitch, 0.05);
-    noiseHit({ ms: 5, vol: 0.09, filter: "bandpass", freq: f, q: 0.8, attack: 0.0005 });
-    noiseHit({ ms: 7, vol: 0.05, filter: "bandpass", freq: f * 0.85, q: 0.8, attack: 0.0005, delay: jitter(9, 0.2) });
+    const [from, ms] = KEYS[lastKey];
+    const t = ctx.currentTime, dur = ms / 1000 / pitch;
+    const src = ctx.createBufferSource();
+    src.buffer = keySprite;
+    src.playbackRate.value = pitch;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.6, t + 0.001);
+    g.gain.setValueAtTime(0.6, t + dur - 0.002);
+    g.gain.linearRampToValueAtTime(0, t + dur);
+    src.connect(g).connect(b.master);
+    src.start(t, from / 1000, ms / 1000);
   },
   // cymbales : souffle aigu qui s'éteint lentement + partiels métalliques inharmoniques
   crash: () => {
