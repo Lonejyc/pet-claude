@@ -108,6 +108,7 @@ fn build(app: &AppHandle, plan: Option<Value>, local: Option<Value>, focus: Opti
         }
     }
     menu.append(&sep()?)?;
+    menu.append(&info(app, format!("Claude pet {}", app.package_info().version))?)?;
     menu.append(&MenuItem::with_id(app, "quit", "Quitter Claude pet", true, Some("Cmd+Q"))?)?;
     Ok(menu)
 }
