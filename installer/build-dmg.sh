@@ -11,9 +11,24 @@ DMG="$HERE/Claude-pet-$VERSION.dmg"
 VOL="Claude pet"
 
 rm -rf "$OUT"; mkdir -p "$OUT/stage"
+# createUpdaterArtifacts exige la clé de signature des mises à jour (sans mot de passe) ; hors du dépôt, à sauvegarder
+export TAURI_SIGNING_PRIVATE_KEY="${TAURI_SIGNING_PRIVATE_KEY:-$HOME/.tauri/claude-pet.key}" TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
 (cd "$HERE/../app" && npm run tauri build -- --bundles app)
 cp -R "$HERE/../app/src-tauri/target/release/bundle/macos/Claude pet.app" "$OUT/stage/"
 codesign --force --deep --sign - "$OUT/stage/Claude pet.app"   # signature ad hoc : requise pour lancer un binaire arm64
+
+# archive de mise à jour : refaite APRÈS le codesign (celle de Tauri contient l'app non signée, qui ne se lancerait pas en arm64), puis signée + latest.json
+TAR="$HERE/Claude-pet-$VERSION.app.tar.gz"
+tar -czf "$TAR" -C "$OUT/stage" "Claude pet.app"
+(cd "$HERE/../app" && env -u TAURI_SIGNING_PRIVATE_KEY npm run tauri signer sign -- -f "$TAURI_SIGNING_PRIVATE_KEY" -p "" "$TAR" >/dev/null)
+python3 - "$VERSION" "$TAR" "$HERE/../docs/releases/$VERSION.md" "$HERE/latest.json" <<'PY'
+import json, sys, os, datetime
+version, tar, notes, out = sys.argv[1:]
+json.dump({"version": version, "notes": open(notes).read() if os.path.exists(notes) else "",
+  "pub_date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+  "platforms": {"darwin-aarch64": {"signature": open(tar + ".sig").read().strip(),
+    "url": f"https://github.com/Lonejyc/pet-claude/releases/download/v{version}/" + os.path.basename(tar)}}}, open(out, "w"), indent=2)
+PY
 ln -s /Applications "$OUT/stage/Applications"
 
 # image modifiable, mise en page de la fenêtre (icônes côte à côte), puis compression
@@ -47,3 +62,4 @@ rm -f "$DMG"
 hdiutil convert "$OUT/rw.dmg" -format UDZO -imagekey zlib-level=9 -o "$DMG" >/dev/null
 rm -rf "$OUT"
 echo "Image disque : $DMG"
+echo "À joindre à la release v$VERSION : $DMG, $TAR, $TAR.sig, $HERE/latest.json"

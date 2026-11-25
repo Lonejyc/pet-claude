@@ -100,6 +100,13 @@ fn build(app: &AppHandle, plan: Option<Value>, local: Option<Value>, focus: Opti
     let hidden = crate::native::HIDDEN.load(Ordering::Relaxed);
     menu.append(&MenuItem::with_id(app, "toggle", if hidden { "Afficher le pet" } else { "Masquer le pet" }, true, None::<&str>)?)?;
     menu.append(&MenuItem::with_id(app, "settings", "Réglages…", true, None::<&str>)?)?;
+    match crate::updater::AVAILABLE.lock().unwrap().as_deref() {
+        Some(v) => menu.append(&MenuItem::with_id(app, "update", format!("Installer la version {v} et relancer"), true, None::<&str>)?)?,
+        None => {
+            let label = if crate::updater::UP_TO_DATE.load(Ordering::Relaxed) { "Claude pet est à jour" } else { "Rechercher une mise à jour…" };
+            menu.append(&MenuItem::with_id(app, "check_update", label, true, None::<&str>)?)?;
+        }
+    }
     menu.append(&sep()?)?;
     menu.append(&MenuItem::with_id(app, "quit", "Quitter Claude pet", true, Some("Cmd+Q"))?)?;
     Ok(menu)
@@ -130,6 +137,14 @@ pub fn on_event(app: &AppHandle, id: &str) {
             refresh(app);
         }
         "settings" => crate::open_settings(app),
+        "check_update" => {
+            let app = app.clone();
+            tauri::async_runtime::spawn(async move { crate::updater::check(&app).await });
+        }
+        "update" => {
+            let app = app.clone();
+            tauri::async_runtime::spawn(async move { crate::updater::install(&app).await });
+        }
         "quit" => app.exit(0),
         _ => {}
     }

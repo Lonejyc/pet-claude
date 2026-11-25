@@ -3,3 +3,6 @@ installer/*.pkg
 .idea/
 installer/build-dmg/
 installer/*.dmg
+installer/*.app.tar.gz
+installer/*.sig
+installer/latest.json
