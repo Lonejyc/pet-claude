@@ -50,4 +50,5 @@ jobs:
 
       - name: Build de l'app
         working-directory: app
-        run: npm run tauri build -- --bundles app
+        # la CI ne signe pas d'archive de mise à jour (la clé privée reste en local, cf. installer/build-dmg.sh)
+        run: npm run tauri build -- --bundles app --config '{"bundle":{"createUpdaterArtifacts":false}}'
